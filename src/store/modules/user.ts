@@ -20,9 +20,9 @@ export const useUserStore = defineStore("user", () => {
         tenantID: userInfo?.tenantID ?? 0,         
         tenantCode: userInfo?.tenantCode ?? "",
         tenantName: userInfo?.tenantName ?? "",
-        tenantDomain: userInfo?.tenantDomain ?? "", // 完整的租户域名
-        defaultTenant: userInfo?.defaultTenant, // 默认所属租户
-        tenants: userInfo?.tenants,    // 关联的租户列表
+        tenantDomain: userInfo?.tenantDomain ?? "", // 完整的公司域名
+        defaultTenant: userInfo?.defaultTenant, // 默认所属公司
+        tenants: userInfo?.tenants,    // 关联的公司列表
     });
 
     // action
@@ -107,7 +107,7 @@ export const useUserStore = defineStore("user", () => {
         }
         return data;
     };
-    /** 切换租户 */
+    /** 切换公司 */
     const switchTenant = async (tenantId: number) => {
         return new Promise<UserResult>((resolve, reject) => {
             switchTenantAPI(tenantId)
@@ -117,12 +117,12 @@ export const useUserStore = defineStore("user", () => {
                         removeAccessToken();
                         removeRefreshToken();
                         removeLocalStorage(UserInfoKey);
-                        // 切换租户成功后，设置 accessToken 和 refreshToken
+                        // 切换公司成功后，设置 accessToken 和 refreshToken
                         setAccessToken(res?.data?.accessToken, res?.data?.accessTokenExpires);
                         setRefreshToken(res?.data?.refreshToken, res?.data?.refreshTokenExpires);
                         resolve(res);
                     } else {
-                        reject(res?.message || "切换租户失败");
+                        reject(res?.message || "切换公司失败");
                     }
                 })
                 .catch(error => {

@@ -2,12 +2,12 @@
     <a-layout-footer class="footer">
         <div class="footer_title" @click="onFooter">{{ systemCopyright }} {{ systemRecordNo }}</div>
         <a-popover position="tl">
-            <div v-if="tenantID > 0" class="footer_tenant">{{ `[当前租户:${tenantName}]`  }}</div>
+            <div v-if="tenantID > 0" class="footer_tenant">{{ `[当前公司:${tenantName}]`  }}</div>
             <template #content>
-                <p>租户ID: {{ tenantID }}</p>
-                <p>租户编码: {{ tenantCode }}</p>
-                <p>租户名称: {{ tenantName }}</p>
-                <p>租户域名: {{ tenantDomain }}</p>
+                <p>公司ID: {{ tenantID }}</p>
+                <p>公司编码: {{ tenantCode }}</p>
+                <p>公司名称: {{ tenantName }}</p>
+                <p>公司域名: {{ tenantDomain }}</p>
             </template>
         </a-popover>
         
@@ -40,21 +40,21 @@ const systemRecordNo = computed(() => {
 
 
 
-// 所在租户名称
+// 所在公司名称
 const tenantName = computed(() => {
     return account.value.tenantName || "";
 });
-// 所在租户ID
+// 所在公司ID
 const tenantID = computed(() => {
     return account.value.tenantID || 0;
 });
 
-// 所在租户Code
+// 所在公司Code
 const tenantCode = computed(() => {
     return account.value.tenantCode || "";
 });
 
-// 所在租户域名
+// 所在公司域名
 const tenantDomain = computed(() => {
     return account.value.tenantDomain || "";
 });

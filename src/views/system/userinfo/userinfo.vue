@@ -316,16 +316,16 @@ const getUserInfo = async () => {
             }
         });
         //console.log("detail",detail.value)
-        // 当 defaultTenant 非空时，添加租户相关字段
+        // 当 defaultTenant 非空时，添加公司相关字段
         if (userInfo.value.defaultTenant) {
             detail.value.push({
                 key: "defaultTenant",
-                label: "默认租户：",
+                label: "默认公司：",
                 value: userInfo.value.defaultTenant?.name || '-'
             });
             detail.value.push({
                 key: "tenants",
-                label: "关联租户：",
+                label: "关联公司：",
                 value: userInfo.value.tenants?.map((t: any) => t.name).join(', ') || '-'
             });
         }

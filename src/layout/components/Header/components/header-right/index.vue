@@ -1,17 +1,17 @@
 <template>
     <div class="header_setting" :class="isMobile && 'head-absolute-fix'">
         <!-- 国际化 -->
-        <a-dropdown trigger="hover" @select="onLange">
-            <a-button size="mini" type="text" class="icon_btn" id="system-language">
-                <template #icon>
-                    <icon-language :size="18" />
-                </template>
-            </a-button>
-            <template #content>
-                <a-doption :disabled="language === 'zh-CN'">{{ $t(`system.zh-CN`) }}</a-doption>
-                <a-doption :disabled="language === 'en-US'">{{ $t(`system.en-US`) }}</a-doption>
-            </template>
-        </a-dropdown>
+<!--        <a-dropdown trigger="hover" @select="onLange">-->
+<!--            <a-button size="mini" type="text" class="icon_btn" id="system-language">-->
+<!--                <template #icon>-->
+<!--                    <icon-language :size="18" />-->
+<!--                </template>-->
+<!--            </a-button>-->
+<!--            <template #content>-->
+<!--                <a-doption :disabled="language === 'zh-CN'">{{ $t(`system.zh-CN`) }}</a-doption>-->
+<!--                <a-doption :disabled="language === 'en-US'">{{ $t(`system.en-US`) }}</a-doption>-->
+<!--            </template>-->
+<!--        </a-dropdown>-->
         <!-- 切换黑夜模式 -->
         <a-tooltip :content="$t(`system.${!darkMode ? 'switch-to-night-mode' : 'switch-to-daytime-mode'}`)">
             <a-button size="mini" type="text" class="icon_btn" id="system-dark" @click="onNightMode">
@@ -57,6 +57,33 @@
                 </template>
             </a-button>
         </a-tooltip>
+        <!-- 公司管理 -->
+        <a-dropdown trigger="hover" v-if="showGlobalTenant || showTenantSwitch">
+            <a-button size="mini" type="text" class="tenant-btn" id="system-tenant">
+                <template #icon>
+                    <s-svg-icon :name="'home'" :size="18" />
+                </template>
+                <span class="tenant-text">{{ $t("system.switch-tenant") }}</span>
+            </a-button>
+            <template #content>
+                <!-- 全局公司 -->
+                <a-doption v-if="showGlobalTenant" @click="switchToGlobalTenant">
+                    <template #default>
+                        <s-svg-icon :name="'home'" :size="18" />
+                        <span class="margin-left-text">{{ $t('system.global-tenant') }}</span>
+                    </template>
+                </a-doption>
+                <!-- 切换公司 -->
+                <template v-if="showTenantSwitch">
+                    <a-doption v-for="tenant in switchableTenants" :key="tenant.id" @click="switchTenant(tenant)">
+                        <template #default>
+                            <s-svg-icon :name="'switch'" :size="18" />
+                            <span class="margin-left-text">{{ tenant.name }}</span>
+                        </template>
+                    </a-doption>
+                </template>
+            </template>
+        </a-dropdown>
         <!-- 我的 -->
         <a-dropdown trigger="hover" :popup-max-height="false">
             <div class="my_setting" id="system-my-setting">
@@ -81,30 +108,30 @@
                         <span class="margin-left-text">{{ $t(`system.change-password`) }}</span>
                     </template>
                 </a-doption>
-                <!-- 全局租户 -->
-                <a-doption v-if="showGlobalTenant" @click="switchToGlobalTenant">
-                    <template #default>
-                        <s-svg-icon :name="'home'" :size="18" />
-                        <span class="margin-left-text">{{ $t('system.global-tenant') }}</span>
-                    </template>
-                </a-doption>
-                <!-- 切换租户 -->
-                <a-dropdown v-if="showTenantSwitch" trigger="hover" position="right">
-                    <a-doption>
-                        <template #default>
-                            <s-svg-icon :name="'switch'" :size="18" />
-                            <span class="margin-left-text">{{ $t('system.switch-tenant') }}</span>
-                            <icon-down style="margin-left: auto; stroke-width: 3" />
-                        </template>
-                    </a-doption>
-                    <template #content>
-                        <a-doption v-for="tenant in switchableTenants" :key="tenant.id" @click="switchTenant(tenant)">
-                            <template #default>
-                                <span>{{ tenant.name }}</span>
-                            </template>
-                        </a-doption>
-                    </template>
-                </a-dropdown>
+                <!-- 全局公司 -->
+<!--                <a-doption v-if="showGlobalTenant" @click="switchToGlobalTenant">-->
+<!--                    <template #default>-->
+<!--                        <s-svg-icon :name="'home'" :size="18" />-->
+<!--                        <span class="margin-left-text">{{ $t('system.global-tenant') }}</span>-->
+<!--                    </template>-->
+<!--                </a-doption>-->
+<!--                &lt;!&ndash; 切换公司 &ndash;&gt;-->
+<!--                <a-dropdown v-if="showTenantSwitch" trigger="hover" position="right">-->
+<!--                    <a-doption>-->
+<!--                        <template #default>-->
+<!--                            <s-svg-icon :name="'switch'" :size="18" />-->
+<!--                            <span class="margin-left-text">{{ $t('system.switch-tenant') }}</span>-->
+<!--                            <icon-down style="margin-left: auto; stroke-width: 3" />-->
+<!--                        </template>-->
+<!--                    </a-doption>-->
+<!--                    <template #content>-->
+<!--                        <a-doption v-for="tenant in switchableTenants" :key="tenant.id" @click="switchTenant(tenant)">-->
+<!--                            <template #default>-->
+<!--                                <span>{{ tenant.name }}</span>-->
+<!--                            </template>-->
+<!--                        </a-doption>-->
+<!--                    </template>-->
+<!--                </a-dropdown>-->
                 <!-- 项目地址 -->
                 <a-doption @click="onProject">
                     <template #default>
@@ -152,23 +179,23 @@ const { language, darkMode } = storeToRefs(themeStore);
 import { useUserStoreHook } from "@/store/modules/user";
 const account = useUserStoreHook().account;
 
-// 判断是否显示切换租户按钮
+// 判断是否显示切换公司按钮
 const showTenantSwitch = computed(() => {
     return account.tenants && account.tenants.some((t: any) => t.id !== account.tenantID);
 });
 
-// 判断是否显示全局租户按钮
+// 判断是否显示全局公司按钮
 const showGlobalTenant = computed(() => {
     return (account.defaultTenant === null || account.defaultTenant === undefined) && account.tenantID > 0;
 });
 
-// 可切换的租户列表
+// 可切换的公司列表
 const switchableTenants = computed(() => {
     if (!account.tenants) return [];
     return account.tenants.filter((t: any) => t.id !== account.tenantID);
 });
 
-// 切换租户
+// 切换公司
 const switchTenant = async (tenant: any) => {
     Modal.confirm({
         title: i18n.t('system.switch-tenant-title'),
@@ -177,7 +204,7 @@ const switchTenant = async (tenant: any) => {
         closable: true,
         onBeforeOk: async () => {
             try {
-                // 调用切换租户 API
+                // 调用切换公司 API
                 await useUserStoreHook().switchTenant(tenant.id);
                 // 重新获取用户信息
                 await useUserStoreHook().getUserInfo();
@@ -185,14 +212,14 @@ const switchTenant = async (tenant: any) => {
                 window.location.reload();
                 return true;
             } catch (error: any) {
-                console.error("切换租户失败:", error);
+                console.error("切换公司失败:", error);
                 return false;
             }
         }
     });
 };
 
-// 切换到全局租户
+// 切换到全局公司
 const switchToGlobalTenant = async () => {
     Modal.confirm({
         title: i18n.t('system.switch-tenant-title'),
@@ -201,7 +228,7 @@ const switchToGlobalTenant = async () => {
         closable: true,
         onBeforeOk: async () => {
             try {
-                // 调用切换租户 API，传入 0 表示全局租户
+                // 调用切换公司 API，传入 0 表示全局公司
                 await useUserStoreHook().switchTenant(0);
                 // 重新获取用户信息
                 await useUserStoreHook().getUserInfo();
@@ -209,7 +236,7 @@ const switchToGlobalTenant = async () => {
                 window.location.reload();
                 return true;
             } catch (error: any) {
-                console.error("切换租户失败:", error);
+                console.error("切换公司失败:", error);
                 return false;
             }
         }

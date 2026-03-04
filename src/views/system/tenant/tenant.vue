@@ -7,13 +7,13 @@
                         label-align="left" auto-label-width>
                         <a-row :gutter="16">
                             <a-col :span="isMobile ? 24 : 6">
-                                <a-form-item field="name" label="租户名称">
-                                    <a-input v-model="formModel.name" placeholder="请输入租户名称" allow-clear />
+                                <a-form-item field="name" label="公司名称">
+                                    <a-input v-model="formModel.name" placeholder="请输入公司名称" allow-clear />
                                 </a-form-item>
                             </a-col>
                             <a-col :span="isMobile ? 24 : 6">
-                                <a-form-item field="code" label="租户编码">
-                                    <a-input v-model="formModel.code" placeholder="请输入租户编码" allow-clear />
+                                <a-form-item field="code" label="公司编码">
+                                    <a-input v-model="formModel.code" placeholder="请输入公司编码" allow-clear />
                                 </a-form-item>
                             </a-col>
                             <a-col :span="isMobile ? 24 : 6">
@@ -57,9 +57,9 @@
                         @page-change="pageChange" @page-size-change="pageSizeChange">
                         <template #columns>
                             <a-table-column title="ID" data-index="id" :width="70" align="center"></a-table-column>
-                            <a-table-column title="租户名称" data-index="name" :ellipsis="true" tooltip
+                            <a-table-column title="公司名称" data-index="name" :ellipsis="true" tooltip
                                 :width="150"></a-table-column>
-                            <a-table-column title="租户编码" data-index="code" :width="150"></a-table-column>
+                            <a-table-column title="公司编码" data-index="code" :width="150"></a-table-column>
                             <a-table-column title="描述" data-index="description" :ellipsis="true" tooltip :width="150">
                                 <template #cell="{ record }">
                                     {{ record.description || '-' }}
@@ -94,7 +94,7 @@
                                         <template #icon><icon-user /></template>
                                         分配用户
                                     </a-link>
-                                    <a-popconfirm content="确定要删除该租户吗?" @ok="handleDelete(record)">
+                                    <a-popconfirm content="确定要删除该公司吗?" @ok="handleDelete(record)">
                                         <a-link type="text" size="small" status="danger"
                                             v-hasPerm="['system:tenant:delete']">
                                             <template #icon><icon-delete /></template>
@@ -112,25 +112,25 @@
         <!-- 新增/编辑弹窗 -->
         <a-modal :width="layoutMode.width" v-model:visible="modalVisible" :title="modalTitle" @ok="handleOk" @cancel="handleCancel">
             <a-form ref="formRef" :layout="layoutMode.layout" :model="modalFormModel" :rules="rules">
-                <a-form-item field="name" label="租户名称">
-                    <a-input v-model="modalFormModel.name" placeholder="请输入租户名称" />
+                <a-form-item field="name" label="公司名称">
+                    <a-input v-model="modalFormModel.name" placeholder="请输入公司名称" />
                 </a-form-item>
-                <a-form-item field="code" label="租户编码">
+                <a-form-item field="code" label="公司编码">
                     <a-input v-model="modalFormModel.code" placeholder="请输入子域名" />
                       <template #extra>
-                        <div>租户编码即子域名，全局唯一，将参与前端租户识别</div>
+                        <div>公司编码即子域名，全局唯一，将参与前端公司识别</div>
                     </template>
                 </a-form-item>
                 <a-form-item field="domain" label="自定义域名">
                     <a-input v-model="modalFormModel.domain" placeholder="请输入域名" />
                     <template #extra>
-                        <div>自定义完整域名，全局唯一，设置后将参与前端租户识别，例如：dev.example.com或example.com</div>
+                        <div>自定义完整域名，全局唯一，设置后将参与前端公司识别，例如：dev.example.com或example.com</div>
                     </template>
                 </a-form-item>
                 <a-form-item field="platformDomain" label="平台域名">
                     <a-input v-model="modalFormModel.platformDomain" placeholder="请输入平台域名" />
                     <template #extra>
-                        <div>主域名（不含子域名），设置后将参与前端租户识别，例如：example.com</div>
+                        <div>主域名（不含子域名），设置后将参与前端公司识别，例如：example.com</div>
                     </template>
                 </a-form-item>
                 <a-form-item field="description" label="描述">
@@ -209,8 +209,8 @@ const modalFormModel = reactive({
 })
 
 const rules = {
-    name: [{ required: true, message: '请输入租户名称' }],
-    code: [{ required: true, message: '请输入租户编码' }],
+    name: [{ required: true, message: '请输入公司名称' }],
+    code: [{ required: true, message: '请输入公司编码' }],
     domain: [{ required: true, message: '请输入自定义域名' }],
 }
 
@@ -237,7 +237,7 @@ const fetchData = async () => {
         renderData.value = res.data.list
         pagination.total = res.data.total
     } catch (error) {
-        Message.error('获取租户列表失败')
+        Message.error('获取公司列表失败')
     } finally {
         loading.value = false
     }
@@ -268,7 +268,7 @@ const pageSizeChange = (pageSize: number) => {
 }
 
 const handleAdd = () => {
-    modalTitle.value = '新增租户'
+    modalTitle.value = '新增公司'
     isEdit.value = false
     modalVisible.value = true
     // 重置表单
@@ -290,7 +290,7 @@ watch(() => modalFormModel.code, (newCode) => {
 })
 
 const handleEdit = async (record: Tenant) => {
-    modalTitle.value = '编辑租户'
+    modalTitle.value = '编辑公司'
     isEdit.value = true
     modalVisible.value = true
     currentRecord.value = record
@@ -308,7 +308,7 @@ const handleEdit = async (record: Tenant) => {
         // 假设后端返回 menuPermission 字段，如果没有则默认为空字符串
         modalFormModel.menuPermission = (data as any).menuPermission || ''
     } catch (error) {
-        Message.error('获取租户信息失败')
+        Message.error('获取公司信息失败')
     }
 }
 

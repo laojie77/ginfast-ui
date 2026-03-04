@@ -46,11 +46,11 @@ export default {
         ["system settings"]: "系统设置",
         ["anti-debugging"]: "防调试",
         ["please select"]: "请选择",
-        ["global-tenant"]: "全局租户",
-        ["switch-tenant"]: "切换租户",
-        ["switch-tenant-title"]: "切换租户",
-        ["switch-tenant-confirm"]: "确定要切换到租户 \"{name}\" 吗？",
-        ["switch-global-tenant-confirm"]: "确定要切换到全局租户吗？"
+        ["global-tenant"]: "总平台",
+        ["switch-tenant"]: "切换公司",
+        ["switch-tenant-title"]: "切换公司",
+        ["switch-tenant-confirm"]: "确定要切换到公司 \"{name}\" 吗？",
+        ["switch-global-tenant-confirm"]: "确定要切换到总平台吗？"
     },
     menu: {
         ["home"]: "首页",
@@ -147,7 +147,7 @@ export default {
         ["file-manager"]: "文件管理",
         ["api-management"]: "接口管理",
         ["plugin-example"]: "插件示例",
-        ["tenant"]: "租户管理",
+        ["tenant"]: "公司管理",
         ["codegen"]: "代码生成",
         ["plugins-manager"]: "插件管理",
     },

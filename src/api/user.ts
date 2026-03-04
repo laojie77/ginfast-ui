@@ -145,7 +145,7 @@ export const getAccountDetailAPI = (id: number) => {
     return http.request<AccountDetailResult>("get", baseUrlApi(`users/${id}`));
 };
 
-// 切换租户
+// 切换公司
 export const switchTenantAPI = (tenantId: number) => {
     return http.request<UserResult>("get", baseUrlApi(`users/switchTenant/${tenantId}`));
 };

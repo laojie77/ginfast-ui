@@ -17,7 +17,7 @@
             <a-space>
               <a-button type="primary" @click="showAddUserModal">
                 <template #icon><icon-plus /></template>
-                添加其他租户用户
+                添加其他公司用户
               </a-button>
             </a-space>
           </a-col>
@@ -72,7 +72,7 @@
                 {{ record.isDefault ? '是' : '否' }}
               </template>
           </a-table-column>
-          <a-table-column title="租户" :width="120" ellipsis tooltip>
+          <a-table-column title="公司" :width="120" ellipsis tooltip>
             <template #cell="{ record }">
               {{ record.user?.tenant?.name }}
             </template>
@@ -196,7 +196,7 @@ const searchKeyword = ref('');
 
 
 
-// 租户用户列表（已关联的用户）
+// 公司用户列表（已关联的用户）
 const tenantUserList = ref<SysUserTenant[]>([]);
 
 // 分页配置（已关联用户列表）
@@ -227,7 +227,7 @@ const handleAddUserSuccess = async (selectedUserIds: number[]) => {
   }
 
   try {
-    // 批量添加用户租户关联
+    // 批量添加用户公司关联
     await batchAddSysUserTenant({
       userIDs: selectedUserIds,
       tenantID: props.tenantId
@@ -235,7 +235,7 @@ const handleAddUserSuccess = async (selectedUserIds: number[]) => {
 
     arcoMessage("success", "用户添加成功");
     addUserModalVisible.value = false;
-    // 重新加载租户用户列表
+    // 重新加载公司用户列表
     pagination.value.current = 1;
     loadTenantUserList();
     emit("success");
@@ -245,7 +245,7 @@ const handleAddUserSuccess = async (selectedUserIds: number[]) => {
   }
 };
 
-// 加载租户已关联的用户列表
+// 加载公司已关联的用户列表
 const loadTenantUserList = async () => {
   if (!props.tenantId) return;
 
@@ -266,8 +266,8 @@ const loadTenantUserList = async () => {
     tenantUserList.value = res.data.list;
     pagination.value.total = res.data.total;
   } catch (error) {
-    console.error("获取租户用户列表失败:", error);
-    arcoMessage("error", "获取租户用户列表失败");
+    console.error("获取公司用户列表失败:", error);
+    arcoMessage("error", "获取公司用户列表失败");
   } finally {
     tableLoading.value = false;
   }
@@ -284,7 +284,7 @@ const removeUser = async (record: SysUserTenant) => {
     });
 
     arcoMessage("success", "用户移除成功");
-    // 重新加载租户用户列表
+    // 重新加载公司用户列表
     loadTenantUserList();
   } catch (error) {
     console.error("移除用户失败:", error);
