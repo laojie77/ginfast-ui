@@ -447,7 +447,7 @@ const onDataScope = (row: any) => {
             ref: dataScopeRef,
             title: row.name,
             defaultCheckedKeys: row.checkedDepts.split(',').map(Number),
-            dataScope: row.dataScope ? String(row.dataScope) : '',
+            dataScope: row.dataScope ? String(row.dataScope) : '0',
             'onUpdate:checkedKeys': (data: any) => {
                 console.log(data)
             }

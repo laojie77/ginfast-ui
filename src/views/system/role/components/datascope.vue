@@ -7,9 +7,10 @@
             <a-form-item label="权限范围(默认可以查看自己创建的数据)">
                 <a-select v-model="formModel.dataScope" placeholder="请选择权限范围" @change="onDataScopeChange" allow-clear>
                     <a-option value="1">全部</a-option>
-                    <a-option value="2">自定义</a-option>
+                    <a-option value="0">仅自己</a-option>
                     <a-option value="3">本部门</a-option>
                     <a-option value="4">本部门及子级</a-option>
+                    <a-option value="2">自定义</a-option>
                 </a-select>
             </a-form-item>
 
