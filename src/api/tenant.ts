@@ -15,6 +15,13 @@ export interface Tenant {
   createdAt: string
   updatedAt: string
   platformDomain: string
+  menuPermission: string
+  city: string
+  workStartTime: string
+  workEndTime: string
+  smsStatus: number
+  isPublic: number
+  isRepeatNeed: number
 }
 
 /** 公司列表响应 */

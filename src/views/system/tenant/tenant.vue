@@ -56,27 +56,46 @@
                     <a-table row-key="id" :loading="loading" :data="renderData" :pagination="pagination"
                         @page-change="pageChange" @page-size-change="pageSizeChange">
                         <template #columns>
-                            <a-table-column title="ID" data-index="id" :width="70" align="center"></a-table-column>
+                            <a-table-column title="ID" data-index="id" :width="50" align="center"></a-table-column>
                             <a-table-column title="公司名称" data-index="name" :ellipsis="true" tooltip
                                 :width="150"></a-table-column>
-                            <a-table-column title="公司编码" data-index="code" :width="150"></a-table-column>
-                            <a-table-column title="描述" data-index="description" :ellipsis="true" tooltip :width="150">
-                                <template #cell="{ record }">
-                                    {{ record.description || '-' }}
-                                </template>
-                            </a-table-column>
+                            <a-table-column title="公司编码" data-index="code" :width="100"></a-table-column>
+                            <a-table-column title="城市" data-index="city" :width="100"></a-table-column>
+                          <a-table-column title="状态" data-index="status" :width="70" align="center">
+                            <template #cell="{ record }">
+                              <a-tag :color="record.status === 1 ? 'green' : 'red'">
+                                {{ record.status === 1 ? '启用' : '停用' }}
+                              </a-tag>
+                            </template>
+                          </a-table-column>
+                          <a-table-column title="短信状态" data-index="smsStatus" :width="100" align="center">
+                            <template #cell="{ record }">
+                              <a-tag :color="record.smsStatus === 1 ? 'green' : 'red'">
+                                {{ record.smsStatus === 1 ? '启用' : '停用' }}
+                              </a-tag>
+                            </template>
+                          </a-table-column>
+                          <a-table-column title="公共池回收" data-index="isPublic" :width="150" align="center">
+                            <template #cell="{ record }">
+                              <a-switch v-model="record.isPublic" :checked-value="1" :unchecked-value="0" @change="(value) => handleSwitchChange(record, 'isPublic', value)" />
+                            </template>
+                          </a-table-column>
+                          <a-table-column title="重复进入" data-index="isRepeatNeed" :width="100" align="center">
+                            <template #cell="{ record }">
+                              <a-switch v-model="record.isRepeatNeed" :checked-value="1" :unchecked-value="0" @change="(value) => handleSwitchChange(record, 'isRepeatNeed', value)" />
+                            </template>
+                          </a-table-column>
+
                             <a-table-column title="域名" data-index="domain" :ellipsis="true" tooltip :width="150">
                                 <template #cell="{ record }">
                                     {{ record.domain || '-' }}
                                 </template>
                             </a-table-column>
-                            <a-table-column title="状态" data-index="status" :width="70" align="center">
-                                <template #cell="{ record }">
-                                    <a-tag :color="record.status === 1 ? 'green' : 'red'">
-                                        {{ record.status === 1 ? '启用' : '停用' }}
-                                    </a-tag>
-                                </template>
-                            </a-table-column>
+<!--                          <a-table-column title="描述" data-index="description" :ellipsis="true" tooltip :width="150">-->
+<!--                            <template #cell="{ record }">-->
+<!--                              {{ record.description || '-' }}-->
+<!--                            </template>-->
+<!--                          </a-table-column>-->
                             <a-table-column title="创建时间" data-index="createdAt" :width="180">
                                 <template #cell="{ record }">
                                     {{ record.createdAt ? formatTime(record.createdAt) : "" }}
@@ -110,7 +129,7 @@
         </a-card>
 
         <!-- 新增/编辑弹窗 -->
-        <a-modal :width="layoutMode.width" v-model:visible="modalVisible" :title="modalTitle" @ok="handleOk" @cancel="handleCancel">
+        <a-modal :width="layoutMode.width" v-model:visible="modalVisible" :title="modalTitle" :on-before-ok="handleOk" @cancel="handleCancel">
             <a-form ref="formRef" :layout="layoutMode.layout" :model="modalFormModel" :rules="rules">
                 <a-form-item field="name" label="公司名称">
                     <a-input v-model="modalFormModel.name" placeholder="请输入公司名称" />
@@ -133,6 +152,23 @@
                         <div>主域名（不含子域名），设置后将参与前端公司识别，例如：example.com</div>
                     </template>
                 </a-form-item>
+              <a-form-item field="city" label="城市" validate-trigger="blur">
+                <a-tree-select v-model="modalFormModel.city" :data="openCity" :field-names="{
+                            key: 'name',
+                            title: 'name',
+                            children: 'children'
+                        }" placeholder="请选择城市"></a-tree-select>
+              </a-form-item>
+              <a-form-item field="workStartTime" label="工作时间">
+                <a-time-picker
+                  type="time-range"
+                  v-model="workTimeRange"
+                  placeholder="请选择工作时间范围"
+                />
+                <template #extra>
+                  <div>工作开始时间和结束时间</div>
+                </template>
+              </a-form-item>
                 <a-form-item field="description" label="描述">
                     <a-textarea v-model="modalFormModel.description" placeholder="请输入描述" />
                 </a-form-item>
@@ -142,6 +178,24 @@
                         <a-radio :value="0">停用</a-radio>
                     </a-radio-group>
                 </a-form-item>
+              <a-form-item field="smsStatus" label="短信状态">
+                <a-radio-group v-model="modalFormModel.smsStatus">
+                  <a-radio :value="1">启用</a-radio>
+                  <a-radio :value="0">停用</a-radio>
+                </a-radio-group>
+              </a-form-item>
+              <a-form-item field="isPublic" label="公共池回收">
+                <a-radio-group v-model="modalFormModel.isPublic">
+                  <a-radio :value="1">是</a-radio>
+                  <a-radio :value="0">否</a-radio>
+                </a-radio-group>
+              </a-form-item>
+              <a-form-item field="isRepeatNeed" label="重复进入">
+                <a-radio-group v-model="modalFormModel.isRepeatNeed">
+                  <a-radio :value="1">是</a-radio>
+                  <a-radio :value="0">否</a-radio>
+                </a-radio-group>
+              </a-form-item>
                 <a-form-item field="menuPermission" label="菜单权限">
                     <a-scrollbar style="height:400px;overflow: auto;">
                         <menu-permission-tree v-model="modalFormModel.menuPermission" />
@@ -187,7 +241,10 @@ const renderData = ref<Tenant[]>([])
 const formModel = reactive({
     name: '',
     code: '',
-    status: undefined as number | undefined
+    status: undefined as number | undefined,
+    smsStatus: undefined as number | undefined,
+    isPublic: undefined as number | undefined,
+    isRepeatNeed: undefined as number | undefined
 })
 
 const modalVisible = ref(false)
@@ -206,12 +263,39 @@ const modalFormModel = reactive({
     status: 1,
     platformDomain:'',
     menuPermission: '', // 逗号分隔的菜单ID集合
+    city:'',
+    workStartTime: '',
+    workEndTime: '',
+    smsStatus: 0,
+    isPublic: 1,
+    isRepeatNeed: 1
+})
+
+// 计算属性：用于前端时间范围选择器
+const workTimeRange = computed({
+    get: () => {
+        if (modalFormModel.workStartTime && modalFormModel.workEndTime) {
+            return [modalFormModel.workStartTime, modalFormModel.workEndTime]
+        }
+        return []
+    },
+    set: (value: string[]) => {
+        if (Array.isArray(value) && value.length === 2) {
+            modalFormModel.workStartTime = value[0] || ''
+            modalFormModel.workEndTime = value[1] || ''
+        } else {
+            modalFormModel.workStartTime = ''
+            modalFormModel.workEndTime = ''
+        }
+    }
 })
 
 const rules = {
     name: [{ required: true, message: '请输入公司名称' }],
     code: [{ required: true, message: '请输入公司编码' }],
     domain: [{ required: true, message: '请输入自定义域名' }],
+    city: [{ required: true, message: '请输入城市' }],
+    workStartTime: [{ required: true, message: '请选择工作时间范围' }],
 }
 
 const pagination = reactive({
@@ -231,7 +315,10 @@ const fetchData = async () => {
             order: "id desc",
             name: formModel.name || undefined,
             code: formModel.code || undefined,
-            status: formModel.status
+            status: formModel.status,
+          smsStatus: formModel.smsStatus,
+          isPublic: formModel.isPublic,
+          isRepeatNeed: formModel.isRepeatNeed
         }
         const res = await getTenantList(params)
         renderData.value = res.data.list
@@ -252,6 +339,9 @@ const reset = () => {
     formModel.name = ''
     formModel.code = ''
     formModel.status = undefined
+    formModel.smsStatus = undefined
+    formModel.isPublic = undefined
+    formModel.isRepeatNeed = undefined
     pagination.current = 1
     fetchData()
 }
@@ -277,8 +367,14 @@ const handleAdd = () => {
     modalFormModel.domain = ''
     modalFormModel.description = ''
     modalFormModel.status = 1
+    modalFormModel.smsStatus = 0
+    modalFormModel.isPublic = 1
+    modalFormModel.isRepeatNeed = 1
     modalFormModel.platformDomain = ''
     modalFormModel.menuPermission = ''
+    modalFormModel.city = ''
+    modalFormModel.workStartTime = ''
+    modalFormModel.workEndTime = ''
     currentRecord.value = null
 }
 
@@ -287,6 +383,10 @@ watch(() => modalFormModel.code, (newCode) => {
     if (newCode && !isEdit.value) {
         modalFormModel.domain = `${newCode}.example.com`
     }
+})
+
+watch(() => workTimeRange, (newvalue) => {
+  console.log(newvalue);
 })
 
 const handleEdit = async (record: Tenant) => {
@@ -304,7 +404,13 @@ const handleEdit = async (record: Tenant) => {
         modalFormModel.domain = data.domain || ''
         modalFormModel.description = data.description || ''
         modalFormModel.status = data.status
+        modalFormModel.smsStatus = data.smsStatus
+        modalFormModel.isPublic = data.isPublic || 1
+        modalFormModel.isRepeatNeed = data.isRepeatNeed || 1
         modalFormModel.platformDomain = data.platformDomain || ''
+        modalFormModel.city = data.city || ''
+        modalFormModel.workStartTime = data.workStartTime || ''
+        modalFormModel.workEndTime = data.workEndTime || ''
         // 假设后端返回 menuPermission 字段，如果没有则默认为空字符串
         modalFormModel.menuPermission = (data as any).menuPermission || ''
     } catch (error) {
@@ -332,8 +438,28 @@ const handleDelete = async (record: Tenant) => {
     }
 }
 
+const handleSwitchChange = async (record: Tenant, field: string, value: number) => {
+    try {
+        await updateTenant({
+          ...record,
+          [field]: value // 更新目标字段
+        })
+
+        Message.success('更新成功')
+        // 刷新数据以获取最新的状态
+        fetchData()
+    } catch (error: any) {
+        Message.error(error.message || '更新失败')
+        // 如果更新失败，恢复原来的值
+        fetchData()
+    }
+}
+const formRef = ref();
 const handleOk = async () => {
     try {
+      let state = await formRef.value.validate();
+      if (state) return false;
+        
         if (isEdit.value) {
             // 编辑
             await updateTenant({
@@ -350,8 +476,12 @@ const handleOk = async () => {
         fetchData()
     } catch (error: any) {
         Message.error(error.message || (isEdit.value ? '更新失败' : '新增失败'))
+        return false;
     }
+    return true;
 }
+//城市选择
+const openCity = ref(dictFilter("city"));
 
 const handleCancel = () => {
     modalVisible.value = false
