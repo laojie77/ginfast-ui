@@ -385,10 +385,6 @@ watch(() => modalFormModel.code, (newCode) => {
     }
 })
 
-watch(() => workTimeRange, (newvalue) => {
-  console.log(newvalue);
-})
-
 const handleEdit = async (record: Tenant) => {
     modalTitle.value = '编辑公司'
     isEdit.value = true

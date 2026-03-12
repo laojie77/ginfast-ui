@@ -31,5 +31,5 @@ dist-ssr
 .roo/
 
 # src/plugins directory
-src/plugins/*/
+#src/plugins/*/
 !src/plugins/example/
