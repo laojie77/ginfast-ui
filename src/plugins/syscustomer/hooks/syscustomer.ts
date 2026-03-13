@@ -1,21 +1,21 @@
 import { ref, computed } from 'vue';
-import type { SysChannelCompanyData, SysChannelCompanyListParams, SysChannelCompanyListResult, SysChannelCompanyResult } from '../api/syschannelcompany';
+import type { SysCustomerData, SysCustomerListParams, SysCustomerListResult, SysCustomerResult } from '../api/syscustomer';
 import {
-    getSysChannelCompanyList,
-    createSysChannelCompany,
-    updateSysChannelCompany,
-    deleteSysChannelCompany,
-    getSysChannelCompany
-} from '../api/syschannelcompany';
+    getSysCustomerList,
+    createSysCustomer,
+    updateSysCustomer,
+    deleteSysCustomer,
+    getSysCustomer
+} from '../api/syscustomer';
 
-export const useSysChannelCompanyPluginHook = () => {
+export const useSysCustomerPluginHook = () => {
     // State
-    const dataList = ref<SysChannelCompanyData[]>([]);
+    const dataList = ref<SysCustomerData[]>([]);
     const loading = ref<boolean>(false);
     const total = ref<number>(0);
     const currentPage = ref<number>(1);
     const pageSize = ref<number>(10);
-    const searchParams = ref<Partial<SysChannelCompanyListParams>>({});
+    const searchParams = ref<Partial<SysCustomerListParams>>({});
 
     // Computed
     const getDataList = computed(() => dataList.value);
@@ -26,7 +26,7 @@ export const useSysChannelCompanyPluginHook = () => {
     const getSearchParams = computed(() => searchParams.value);
 
     // Actions
-    const fetchDataList = async (params?: Partial<SysChannelCompanyListParams>) => {
+    const fetchDataList = async (params?: Partial<SysCustomerListParams>) => {
         loading.value = true;
         try {
             // 更新分页参数和搜索条件
@@ -43,13 +43,13 @@ export const useSysChannelCompanyPluginHook = () => {
             }
 
             // 构造请求参数
-            const requestParams: SysChannelCompanyListParams = {
+            const requestParams: SysCustomerListParams = {
                 pageNum: currentPage.value,
                 pageSize: pageSize.value,
                 ...searchParams.value
             };
 
-            const response: SysChannelCompanyListResult = await getSysChannelCompanyList(requestParams);
+            const response: SysCustomerListResult = await getSysCustomerList(requestParams);
 
             // 根据返回的数据结构处理
             if (Array.isArray(response.data.list)) {
@@ -62,18 +62,18 @@ export const useSysChannelCompanyPluginHook = () => {
         }
     };
 
-    const createData = async (data: Omit<SysChannelCompanyData, 'id'>) => {
+    const createData = async (data: Omit<SysCustomerData, 'id'>) => {
         try {
-            const response = await createSysChannelCompany(data);
+            const response = await createSysCustomer(data);
             return response;
         } catch (error) {
             throw error;
         }
     };
 
-    const updateData = async (data: Partial<SysChannelCompanyData>) => {
+    const updateData = async (data: Partial<SysCustomerData>) => {
         try {
-            const response = await updateSysChannelCompany(data);
+            const response = await updateSysCustomer(data);
             return response;
         } catch (error) {
             throw error;
@@ -82,8 +82,8 @@ export const useSysChannelCompanyPluginHook = () => {
 
     const deleteData = async (id: number) => {
         try {
-            await deleteSysChannelCompany(id);
-            dataList.value = dataList.value.filter((item: SysChannelCompanyData) => item.id !== id);
+            await deleteSysCustomer(id);
+            dataList.value = dataList.value.filter((item: SysCustomerData) => item.id !== id);
             // 减少总数
             total.value = Math.max(0, total.value - 1);
         } catch (error) {
@@ -92,9 +92,9 @@ export const useSysChannelCompanyPluginHook = () => {
     };
 
     // 根据ID获取用户详情
-    const getDetail = async (id: number) : Promise<SysChannelCompanyResult> => {
+    const getDetail = async (id: number) : Promise<SysCustomerResult> => {
         try {
-            const response = await getSysChannelCompany(id);
+            const response = await getSysCustomer(id);
             return response;
         } catch (error) {
             throw error;

@@ -8,7 +8,7 @@ export interface SysChannelCompanyData {
     id: number; // Id
     channelId: number; // 渠道ID
     channelName: string; // 渠道名称
-    hiddenCode: string; // 渠道公司名称
+    hiddenCode: string; // 渠道隐藏名称
     tenantId: number; // 公司平台
     city: string; // 城市
     rate: number; // 优质率

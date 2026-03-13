@@ -8,7 +8,7 @@ export interface SysChannelData {
     id: number; // Id
   channelName: string; // 渠道名称
     channelKey: string; // 渠道码
-    hiddenCode: string; // 渠道公司名称
+    hiddenCode: string; // 渠道隐藏名称
     secretKey: string; // 渠道密钥
     institution: string; // 机构ID
     starUrl: string; // 星级回传地址
@@ -36,7 +36,7 @@ export interface SysChannelListParams {
     id?: number; // Id
   channelName?: string; // 渠道名称
     channelKey?: string; // 渠道码
-    hiddenCode?: string; // 渠道公司名称
+    hiddenCode?: string; // 渠道隐藏名称
     secretKey?: string; // 渠道密钥
     institution?: string; // 机构ID
     starUrl?: string; // 星级回传地址

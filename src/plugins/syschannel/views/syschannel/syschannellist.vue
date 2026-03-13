@@ -19,7 +19,7 @@
             </a-col>
             <a-col :span="isMobile ? 24 : 6">
               <a-form-item field="hiddenCode" label="渠道公司">
-                <a-input v-model="searchForm.hiddenCode" placeholder="请输入渠道公司名称" />
+                <a-input v-model="searchForm.hiddenCode" placeholder="请输入渠道隐藏名称" />
               </a-form-item>
             </a-col>
             <a-col :span="isMobile ? 24 : 6">
@@ -51,10 +51,10 @@
                  :bordered="{ wrapper: true, cell: true }" @page-change="handlePageChange"
                  @page-size-change="handlePageSizeChange">
           <template #columns>
-            <!--                    <a-table-column title="Id" data-index="id"  :width="50"  ellipsis tooltip/>-->
+                                <a-table-column title="Id" data-index="id"  :width="50"  ellipsis tooltip/>
             <a-table-column title="名称" data-index="channelName"  :width="100"  ellipsis tooltip/>
             <a-table-column title="渠道码" data-index="channelKey"  :width="100"  ellipsis tooltip/>
-            <a-table-column title="渠道公司名称" data-index="hiddenCode"  :width="100"  ellipsis tooltip/>
+            <a-table-column title="渠道隐藏名称" data-index="hiddenCode"  :width="100"  ellipsis tooltip/>
             <a-table-column title="渠道密钥" data-index="secretKey"  :width="180"  ellipsis tooltip/>
             <a-table-column title="总进件数量" data-index="total"  :width="100"  ellipsis tooltip/>
             <a-table-column title="优质率" data-index="rate"  :width="80"  ellipsis tooltip/>
@@ -111,6 +111,11 @@
                 {{ getTenantName(record.tenantId) }}
               </template>
             </a-table-column>
+            <a-table-column title="渠道公司名称" data-index="hiddenName" :width="120" ellipsis tooltip>
+              <template #cell="{ record }">
+                {{ record.hiddenName }}
+              </template>
+            </a-table-column>
             <a-table-column title="城市" data-index="city" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 {{ record.city }}
@@ -159,6 +164,9 @@
               <a-option v-for="item in tenantList" :key="item.id" :value="item.id">{{ item.name }}</a-option>
             </a-select>
           </a-form-item>
+          <a-form-item field="hiddenName" label="渠道名称" :rules="[{ required: true, message: '请输入渠道名称' }]">
+            <a-input v-model="companyEditingData.hiddenName" placeholder="请输入渠道名称" />
+          </a-form-item>
           <a-form-item field="city" label="城市" :rules="[{ required: true, message: '请选择城市' }]">
             <a-select v-model="companyEditingData.city" placeholder="请选择城市" style="width: 100%">
               <a-option v-for="item in cityOption" :key="item.value" :value="item.value">{{ item.name }}</a-option>
@@ -203,7 +211,7 @@
           </a-form-item>
           <a-form-item field="channelKey" label="渠道码"><a-input v-model="editingData.channelKey" placeholder="请输入渠道码" />
           </a-form-item>
-          <a-form-item field="hiddenCode" label="渠道公司名称"><a-input v-model="editingData.hiddenCode" placeholder="请输入渠道公司名称" />
+          <a-form-item field="hiddenCode" label="渠道隐藏名称"><a-input v-model="editingData.hiddenCode" placeholder="请输入渠道公司名称" />
           </a-form-item>
           <a-form-item field="starUrl" label="星级回传地址"><a-input v-model="editingData.starUrl" placeholder="请输入星级回传地址" />
           </a-form-item>
@@ -506,6 +514,7 @@ const companyEditingData = reactive({
   channelId: undefined,
   tenantId: undefined,
   city: undefined,
+  hiddenName: '',
   quantity: 0,
   isStar: 0,
   fieldMappings: []
@@ -535,6 +544,7 @@ const handleCompanyCreate = () => {
     channelId: currentChannelId.value,
     tenantId: undefined,
     city: undefined,
+    hiddenName: '',
     quantity: 0,
     rate: 0,
     isStar: 0,

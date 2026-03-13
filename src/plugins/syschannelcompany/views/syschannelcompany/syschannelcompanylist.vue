@@ -5,8 +5,8 @@
             <a-form :model="searchForm" :layout="layoutMode.layout" label-align="left" auto-label-width>
                 <a-row :gutter="16">
                   <a-col :span="isMobile ? 24 : 6">
-                    <a-form-item field="hiddenCode" label="渠道名称">
-                      <a-input-search v-model="searchForm.hiddenCode" placeholder="请输入名称搜索" @search="handleSearch" allow-clear />
+                    <a-form-item field="hiddenName" label="渠道名称">
+                      <a-input-search v-model="searchForm.hiddenName" placeholder="请输入名称搜索" @search="handleSearch" allow-clear />
                     </a-form-item>
                   </a-col>
 <!--                    <a-col :span="isMobile ? 24 : 8">-->
@@ -40,7 +40,7 @@
                 @page-size-change="handlePageSizeChange">
                 <template #columns>
 <!--                    <a-table-column title="Id" data-index="id"  :width="150"  ellipsis tooltip/>-->
-                    <a-table-column title="渠道名称" data-index="hiddenCode"  :width="150"  ellipsis tooltip/>
+                    <a-table-column title="渠道名称" data-index="hiddenName"  :width="150"  ellipsis tooltip/>
 <!--                    <a-table-column title="公司" data-index="tenantId"  :width="150"  ellipsis tooltip/>-->
                     <a-table-column title="城市" data-index="city"  :width="150"  ellipsis tooltip/>
                     <a-table-column title="优质率" data-index="rate"  :width="150"  ellipsis tooltip/>
@@ -138,7 +138,7 @@ const searchForm = reactive({
     channelId: undefined,
     tenantId: undefined,
     city: '',
-  hiddenCode: '',
+  hiddenName: '',
 });
 
 const editingData = reactive<Partial<SysChannelCompanyData>>({
@@ -184,13 +184,9 @@ const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number
     if (searchForm.city) {
         params.city = searchForm.city;
     }
-    if (searchForm.hiddenCode) {
-        params.hiddenCode = searchForm.hiddenCode;
+    if (searchForm.hiddenName) {
+        params.hiddenName = searchForm.hiddenName;
     }
-    // // 当搜索条件为空字符串时，传递空字符串以清除后端缓存的搜索条件
-    // if (searchForm.hiddenCode === '') {
-    //     params.hiddenCode = '';
-    // }
     await fetchDataList(params);
 };
 
@@ -214,7 +210,7 @@ const handleReset = () => {
     searchForm.channelId = undefined;
     searchForm.tenantId = undefined;
     searchForm.city = '';
-    searchForm.hiddenCode = '';
+    searchForm.hiddenName = '';
     resetSearchParams();
     loadData(1);
 };
