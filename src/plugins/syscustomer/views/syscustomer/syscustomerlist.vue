@@ -33,7 +33,7 @@
                         <!-- 渠道来源选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="channelName" label="渠道来源">
                             <a-select v-model="searchForm.channelName" placeholder="渠道来源" allow-clear>
-                                <a-option v-for="item in channelOptions" :key="item.value" :value="item.value">{{ item.label }}</a-option>
+                                <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -84,13 +84,7 @@
                     <a-col :span="isMobile ? 12 : 3">
                         <!-- 所属部门精确查询 -->
                         <a-form-item field="departmentId" label="所属部门">
-                          <a-tree-select 
-                            :data="filterTree" 
-                            v-model="searchForm.departmentId" 
-                            placeholder="请选择部门"
-                            allow-clear
-                            :field-names="{ key: 'id', title: 'name', children: 'children' }"
-                          />
+                          <a-tree-select :data="filterTree" v-model="searchForm.departmentId" placeholder="Please select ..."/>
                         </a-form-item>
                     </a-col>
                     <a-col :span="isMobile ? 12 : 3">
@@ -209,7 +203,7 @@
                 </a-form-item>
                 <a-form-item field="channelName" label="渠道来源">
                     <a-select v-model="editingData.channelName" placeholder="请选择渠道来源">
-                        <a-option v-for="item in channelOptions" :key="item.value" :value="item.value">{{ item.label }}</a-option>
+                        <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                     </a-select>
                 </a-form-item>
                 <a-form-item field="customerType" label="星级">
@@ -289,10 +283,9 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useSysCustomerPluginHook } from '../../hooks/syscustomer';
 import type { SysCustomerData } from '../../api/syscustomer';
 import { formatTime } from '@/globals';
-import SelectDep from '@/components/select-department/index.vue';
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
-import { getSysChannelCompanyList } from '@/plugins/syschannelcompany/api/syschannelcompany';
-import { getDivisionAPI } from '@/api/department';
+import { getSysChannelCompanyList } from '../../../syschannelcompany/api/syschannelcompany';
+import type { SysChannelCompanyData, SysChannelCompanyListParams } from '../../../syschannelcompany/api/syschannelcompany';
 const { isMobile } = useDevicesSize();
 
 // 弹窗布局配置
@@ -327,6 +320,10 @@ const isQuitOption = ref(dictFilter("isStatus"));
 const isRepeatOption = ref(dictFilter("isStatus"));
 const starStatusOption = ref(dictFilter("isStatus"));
 const isLockOption = ref(dictFilter("isStatus"));
+
+// 渠道来源选项
+const channelOption = ref<{value: number, name: string}[]>([]);
+
 const {
     dataList,
     loading,
@@ -343,14 +340,6 @@ const {
 
 const modalVisible = ref(false);
 const formRef = ref();
-
-// 渠道选项数据
-const channelOptions = ref<any[]>([]);
-
-// 部门树数据
-const filterTree = ref<any[]>([]);
-const treeData = ref<any[]>([]);
-const deptSearchKeyword = ref('');
 
 // 搜索表单
 const searchForm = reactive({
@@ -442,74 +431,6 @@ const paginationConfig = computed(() => ({
     showPageSize: true,
     pageSizeOptions: [10, 20, 30, 50],
 }));
-
-// 获取渠道列表
-const loadChannelOptions = async () => {
-    try {
-        const response = await getSysChannelCompanyList({
-            pageNum: 1,
-            pageSize: 1000
-        });
-        
-        if (response.data && response.data.list) {
-            // 过滤当前租户的数据，显示hiddenName作为label，channelId作为value
-            channelOptions.value = response.data.list.map((item: any) => ({
-                label: item.hiddenName || item.channelName,
-                value: item.channelId
-            }));
-        }
-    } catch (error) {
-        console.error('获取渠道列表失败:', error);
-    }
-};
-
-// 部门搜索处理函数
-const onDeptSearch = () => {
-    if (!deptSearchKeyword.value) {
-        // 如果搜索关键字为空，显示完整的部门树
-        filterTree.value = treeData.value;
-        return;
-    }
-
-    // 过滤部门树数据
-    const filterTreeData = (nodes: any[]) => {
-        if (!nodes || nodes.length === 0) return [];
-
-        const result = [];
-        for (const node of nodes) {
-            // 检查当前节点是否匹配搜索关键字
-            const isMatch = node.name.includes(deptSearchKeyword.value);
-
-            // 递归过滤子节点
-            const filteredChildren = filterTreeData(node.children);
-
-            // 如果当前节点匹配或者有匹配的子节点，则保留该节点
-            if (isMatch || filteredChildren.length > 0) {
-                const newNode = { ...node };
-                // 如果当前节点匹配，显示所有子节点
-                // 如果当前节点不匹配，但子节点匹配，则只显示匹配的子节点
-                newNode.children = isMatch ? node.children : filteredChildren;
-                result.push(newNode);
-            }
-        }
-        return result;
-    };
-
-    filterTree.value = filterTreeData(treeData.value);
-};
-
-// 获取部门树数据
-const loadDepartmentTree = async () => {
-    try {
-        const response = await getDivisionAPI();
-        if (response.data && response.data.list) {
-            treeData.value = response.data.list;
-            filterTree.value = response.data.list;
-        }
-    } catch (error) {
-        console.error('获取部门树失败:', error);
-    }
-};
 
 // 获取数据列表
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
@@ -719,13 +640,35 @@ const handleCancel = () => {
     modalVisible.value = false;
 };
 
+// 查询渠道数据
+const fetchChannelData = async () => {
+    try {
+        const params: SysChannelCompanyListParams = {
+            pageNum: 1,
+            pageSize: 1000, // 设置较大的页面大小以获取所有数据
+            // 后端会自动根据当前租户过滤数据
+        };
+        
+        const response = await getSysChannelCompanyList(params);
+        
+        if (response.data && Array.isArray(response.data.list)) {
+            // 将渠道数据转换为选项格式，显示hiddenCode字段
+            channelOption.value = response.data.list.map((item: SysChannelCompanyData) => ({
+                value: item.id,
+                name: item.hiddenName
+            }));
+        }
+    } catch (error) {
+        console.error('获取渠道数据失败:', error);
+        channelOption.value = [];
+    }
+};
+
 onMounted(async () => {
     // 初始化加载数据
     await loadData();
-    // 加载渠道选项
-    await loadChannelOptions();
-    // 加载部门树数据
-    await loadDepartmentTree();
+    // 加载渠道数据
+    await fetchChannelData();
 })
 
 </script>
