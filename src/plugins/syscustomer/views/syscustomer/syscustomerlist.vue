@@ -26,7 +26,7 @@
                     <a-col :span="isMobile ? 12 : 3">
                         <!-- 需求金额精确查询 -->
                         <a-form-item field="moneyDemand" label="需求金额">
-                            <a-input-number v-model="searchForm.moneyDemand" placeholder="需求金额" />
+                            <a-input-search v-model="searchForm.moneyDemand" placeholder="需求金额" />
                         </a-form-item>
                     </a-col>
                     <a-col :span="isMobile ? 12 : 3">
@@ -39,8 +39,10 @@
                     </a-col>
                     <a-col :span="isMobile ? 12 : 3">
                         <!-- 跟进人精确查询 -->
-                        <a-form-item field="userName" label="跟进人">
-                            <a-input-number v-model="searchForm.userName" placeholder="跟进人" />
+                        <a-form-item field="userId" label="跟进人">
+                            <a-select v-model="searchForm.userId" placeholder="请选择跟进人" allow-clear>
+                                <a-option v-for="item in followerOptions" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                            </a-select>
                         </a-form-item>
                     </a-col>
                     <a-col :span="isMobile ? 12 : 3">
@@ -81,17 +83,17 @@
                             <a-date-picker v-model="searchForm.allotTime" placeholder="分配时间" />
                         </a-form-item>
                     </a-col>
-                    <a-col :span="isMobile ? 12 : 3">
+                    <a-col :span="isMobile ? 12 : 6">
                         <!-- 所属部门精确查询 -->
                         <a-form-item field="departmentId" label="所属部门">
-                          <a-tree-select :data="filterTree" v-model="searchForm.departmentId" placeholder="Please select ..."/>
+                          <a-cascader :options="cascaderOptions" v-model="searchForm.departmentId" placeholder="请选择部门" check-strictly allow-clear />
                         </a-form-item>
                     </a-col>
                     <a-col :span="isMobile ? 12 : 3">
                         <!-- 再分配选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="isReassign" label="再分配">
                             <a-select v-model="searchForm.isReassign" placeholder="再分配" allow-clear>
-                                <a-option v-for="item in isReassignOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                                <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -99,7 +101,7 @@
                         <!-- 离职数据选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="isQuit" label="离职数据">
                             <a-select v-model="searchForm.isQuit" placeholder="离职数据" allow-clear>
-                                <a-option v-for="item in isQuitOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                                <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -107,7 +109,7 @@
                         <!-- 重复标记选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="isRepeat" label="重复标记">
                             <a-select v-model="searchForm.isRepeat" placeholder="重复标记" allow-clear>
-                                <a-option v-for="item in isRepeatOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                                <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -115,7 +117,7 @@
                         <!-- 星级回传选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="starStatus" label="星级回传">
                             <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
-                                <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                                <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -123,7 +125,7 @@
                         <!-- 是否锁定选择框查询（radio/select/checkbox统一使用select） -->
                         <a-form-item field="isLock" label="是否锁定">
                             <a-select v-model="searchForm.isLock" placeholder="是否锁定" allow-clear>
-                                <a-option v-for="item in isLockOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                                <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
                             </a-select>
                         </a-form-item>
                     </a-col>
@@ -148,15 +150,16 @@
                 :bordered="{ wrapper: true, cell: true }" @page-change="handlePageChange"
                 @page-size-change="handlePageSizeChange">
                 <template #columns>
+                  <a-table-column title="锁定" data-index="isLock"  :width="100"  ellipsis tooltip/>
                    <a-table-column title="客户编号" data-index="num"  :width="100"  ellipsis tooltip/>
-                    <a-table-column title="客户姓名" data-index="name"  :width="100"  ellipsis tooltip/>
+                    <a-table-column title="姓名" data-index="name"  :width="100"  ellipsis tooltip/>
                     <a-table-column title="手机号" data-index="mobile"  :width="120"  ellipsis tooltip/>
-                    <a-table-column title="需求金额" data-index="moneyDemand"  :width="100"  ellipsis tooltip/>
                     <a-table-column title="渠道来源" data-index="channelName"  :width="100"  ellipsis tooltip/>
+                  <a-table-column title="业务阶段" data-index="status"  :width="100"  ellipsis tooltip/>
+                  <a-table-column title="客户有效" data-index="intention"  :width="100"  ellipsis tooltip/>
+                  <a-table-column title="星级" data-index="customerType"  :width="80"  ellipsis tooltip/>
                     <a-table-column title="跟进人" data-index="userName"  :width="100"  ellipsis tooltip/>
-                    <a-table-column title="星级" data-index="customerType"  :width="80"  ellipsis tooltip/>
-                    <a-table-column title="业务阶段" data-index="status"  :width="100"  ellipsis tooltip/>
-                    <a-table-column title="客户有效" data-index="intention"  :width="100"  ellipsis tooltip/>
+                  <a-table-column title="需求金额" data-index="moneyDemand"  :width="100"  ellipsis tooltip/>
                   <a-table-column title="客户备注" data-index="remarks"  :width="120"  ellipsis tooltip/>
                     <a-table-column title="分配时间" data-index="allotTime"  :width="120"  ellipsis tooltip>
                         <template #cell="{ record }">
@@ -165,12 +168,11 @@
                     </a-table-column>
                     <a-table-column title="所属部门" data-index="departmentId"  :width="100"  ellipsis tooltip/>
                     <a-table-column title="所在城市" data-index="city"  :width="100"  ellipsis tooltip/>
-                    <a-table-column title="再分配" data-index="isReassign"  :width="80"  ellipsis tooltip/>
-                    <a-table-column title="离职数据" data-index="isQuit"  :width="80"  ellipsis tooltip/>
-                    <a-table-column title="重复标记" data-index="isRepeat"  :width="80"  ellipsis tooltip/>
-                    <a-table-column title="短信发送状态" data-index="isSms"  :width="100"  ellipsis tooltip/>
-                    <a-table-column title="星级回传" data-index="starStatus"  :width="80"  ellipsis tooltip/>
-                    <a-table-column title="是否锁定" data-index="isLock"  :width="80"  ellipsis tooltip/>
+                    <a-table-column title="再分配" data-index="isReassign"  :width="100"  ellipsis tooltip/>
+                    <a-table-column title="离职数据" data-index="isQuit"  :width="100"  ellipsis tooltip/>
+                    <a-table-column title="重复标记" data-index="isRepeat"  :width="100"  ellipsis tooltip/>
+                    <a-table-column title="短信" data-index="isSms"  :width="100"  ellipsis tooltip/>
+                    <a-table-column title="星级回传" data-index="starStatus"  :width="100"  ellipsis tooltip/>
                     <a-table-column title="操作" :width="200" :fixed="isMobile ? undefined : 'right'">
                         <template #cell="{ record }">
                             <a-space>
@@ -223,42 +225,42 @@
                 </a-form-item>
                 <a-form-item field="isHouse" label="房">
                     <a-radio-group v-model="editingData.isHouse">
-                        <a-radio v-for="item in isHouseOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isCar" label="车">
                     <a-radio-group v-model="editingData.isCar">
-                        <a-radio v-for="item in isCarOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isCompany" label="公司">
                     <a-radio-group v-model="editingData.isCompany">
-                        <a-radio v-for="item in isCompanyOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isCredit" label="信用卡">
                     <a-radio-group v-model="editingData.isCredit">
-                        <a-radio v-for="item in isCreditOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isInsurance" label="保单">
                     <a-radio-group v-model="editingData.isInsurance">
-                        <a-radio v-for="item in isInsuranceOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isWork" label="打卡工资">
                     <a-radio-group v-model="editingData.isWork">
-                        <a-radio v-for="item in isWorkOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isFund" label="公积金">
                     <a-radio-group v-model="editingData.isFund">
-                        <a-radio v-for="item in isFundOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="isSocial" label="社保">
                     <a-radio-group v-model="editingData.isSocial">
-                        <a-radio v-for="item in isSocialOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                        <a-radio v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
                     </a-radio-group>
                 </a-form-item>
                 <a-form-item field="sex" label="性别">
@@ -279,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useSysCustomerPluginHook } from '../../hooks/syscustomer';
 import type { SysCustomerData } from '../../api/syscustomer';
 import { formatTime } from '@/globals';
@@ -287,6 +289,261 @@ import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { getSysChannelCompanyList } from '../../../syschannelcompany/api/syschannelcompany';
 import type { SysChannelCompanyData, SysChannelCompanyListParams } from '../../../syschannelcompany/api/syschannelcompany';
 const { isMobile } = useDevicesSize();
+import { UserInfoKey } from "@/utils/auth";
+import { getLocalStorage } from "@/utils/app.ts";
+import { userType } from "@/store/types.ts";
+import { getDivisionAPI, type DivisionItem } from '@/api/department' //部门列表数据
+import { getAccountListAPI, type AccountItem } from '@/api/user' //用户列表数据
+const userInfo = getLocalStorage<userType>(UserInfoKey);
+// userInfo.department 为当前自身部门
+//roleIDs:[5, 6]
+//roles:[
+// {checkedDepts:"5,6,7"，children:null，dataScope:2,id:5,name:"主管",createdBy=4}
+// {checkedDepts:""，children:null，dataScope:0,id:6,name:"员工",createdBy=4}
+// ]
+// 如果createdBy=1 且dataScope=1，则为负责人显示全部部门
+// 如果createdBy!=1 且dataScope=2，则显示checkedDepts下的部门
+// 如果createdBy!=1 且dataScope=3，则显示查询自身所属部门的所属用户创建的数据
+// 如果createdBy!=1 且dataScope=4，则显示查询自身所属部门及该部门下所有子级部门的所属用户创建的数据
+
+// 部门树数据
+const departmentTree = ref<DivisionItem[]>([]);
+
+// 跟进人列表数据
+const followerOptions = ref<{value: number, name: string}[]>([]);
+
+// 获取部门树数据
+const getDepartmentTree = async () => {
+  try {
+    const res = await getDivisionAPI();
+    departmentTree.value = res.data.list || [];
+  } catch (error) {
+    console.error('获取部门数据失败:', error);
+    departmentTree.value = [];
+  }
+};
+
+// 根据部门ID获取跟进人列表
+const getFollowerListByDepartment = async (departmentIds: number[]) => {
+  try {
+    if (!departmentIds.length) {
+      followerOptions.value = [];
+      return;
+    }
+    
+    // 构建deptIds参数数组
+    const params: any = {
+      pageNum: 1,
+      pageSize: 100
+    };
+    
+    // 添加部门ID参数
+    departmentIds.forEach((deptId, index) => {
+      params[`deptIds[${index}]`] = deptId;
+    });
+    
+    const response = await getAccountListAPI(params);
+    
+    if (response.data && Array.isArray(response.data.list)) {
+      // 将用户数据转换为选项格式
+      followerOptions.value = response.data.list.map((item: AccountItem) => ({
+        value: item.id,
+        name: item.nickName
+      }));
+    } else {
+      followerOptions.value = [];
+    }
+  } catch (error) {
+    console.error('获取跟进人列表失败:', error);
+    followerOptions.value = [];
+  }
+};
+
+// 将部门数据转换为a-cascader格式
+const convertToCascaderFormat = (nodes: DivisionItem[]): any[] => {
+  return nodes.map(node => ({
+    value: node.id,
+    label: node.name,
+    children: node.children && node.children.length > 0 ? convertToCascaderFormat(node.children) : undefined
+  }));
+};
+
+// 根据数据权限过滤部门树并转换为cascader格式
+const cascaderOptions = computed(() => {
+  if (!departmentTree.value.length) return [];
+  
+  // 获取用户角色信息
+  const userRoles = userInfo?.roles || [];
+  const userDepartmentId = userInfo?.department;
+  
+  // 如果没有角色信息，返回空数组
+  if (!userRoles.length) return [];
+  
+  // 检查是否有超级管理员权限
+  const hasSuperAdmin = userRoles.some(role => 
+    role.createdBy === 1 && role.dataScope === 1
+  );
+  
+  // 如果是超级管理员，显示全部部门
+  if (hasSuperAdmin) {
+    return convertToCascaderFormat(departmentTree.value);
+  }
+  
+  // 合并所有角色的权限：收集所有允许的部门ID
+  const allowedDepartmentIds = new Set<number>();
+  let hasDataScope2WithEmptyCheckedDepts = false;
+  
+  for (const role of userRoles) {
+    const checkedDepts = role.checkedDepts ? role.checkedDepts.split(',').map(Number) : [];
+    
+    switch (role.dataScope) {
+      case 1: // 超级管理员权限 - 已经处理过
+        break;
+      case 2: // 自定义权限
+        if (checkedDepts.length === 0) {
+          hasDataScope2WithEmptyCheckedDepts = true;
+        } else {
+          checkedDepts.forEach(deptId => allowedDepartmentIds.add(deptId));
+        }
+        break;
+      case 3: // 本部门数据
+        if (userDepartmentId) {
+          allowedDepartmentIds.add(userDepartmentId);
+        }
+        break;
+      case 4: // 本部门及子部门
+        if (userDepartmentId) {
+          allowedDepartmentIds.add(userDepartmentId);
+          // 这里需要递归添加所有子部门ID
+          const addChildDepartments = (nodes: DivisionItem[]) => {
+            for (const node of nodes) {
+              if (node.id === userDepartmentId && node.children) {
+                node.children.forEach(child => {
+                  allowedDepartmentIds.add(child.id);
+                  if (child.children) {
+                    addChildDepartments(child.children);
+                  }
+                });
+                break;
+              }
+              if (node.children) {
+                addChildDepartments(node.children);
+              }
+            }
+          };
+          addChildDepartments(departmentTree.value);
+        }
+        break;
+    }
+  }
+  
+  // 如果存在dataScope=2且checkedDepts为空的情况，添加用户所属部门
+  if (hasDataScope2WithEmptyCheckedDepts && userDepartmentId) {
+    allowedDepartmentIds.add(userDepartmentId);
+  }
+  
+  // 如果没有允许的部门ID，返回空数组
+  if (allowedDepartmentIds.size === 0) {
+    return [];
+  }
+  
+  // 获取用户权限范围内的所有部门ID
+  const getAllowedDepartmentIds = (): number[] => {
+    const allowedDepartmentIds = new Set<number>();
+    let hasDataScope2WithEmptyCheckedDepts = false;
+    
+    for (const role of userRoles) {
+      const checkedDepts = role.checkedDepts ? role.checkedDepts.split(',').map(Number) : [];
+      
+      switch (role.dataScope) {
+        case 1: // 超级管理员权限 - 已经处理过
+          break;
+        case 2: // 自定义权限
+          if (checkedDepts.length === 0) {
+            hasDataScope2WithEmptyCheckedDepts = true;
+          } else {
+            checkedDepts.forEach(deptId => allowedDepartmentIds.add(deptId));
+          }
+          break;
+        case 3: // 本部门数据
+          if (userDepartmentId) {
+            allowedDepartmentIds.add(userDepartmentId);
+          }
+          break;
+        case 4: // 本部门及子部门
+          if (userDepartmentId) {
+            allowedDepartmentIds.add(userDepartmentId);
+            // 递归添加所有子部门ID
+            const addChildDepartments = (nodes: DivisionItem[]) => {
+              for (const node of nodes) {
+                if (node.id === userDepartmentId && node.children) {
+                  node.children.forEach(child => {
+                    allowedDepartmentIds.add(child.id);
+                    if (child.children) {
+                      addChildDepartments(child.children);
+                    }
+                  });
+                  break;
+                }
+                if (node.children) {
+                  addChildDepartments(node.children);
+                }
+              }
+            };
+            addChildDepartments(departmentTree.value);
+          }
+          break;
+      }
+    }
+    
+    // 如果存在dataScope=2且checkedDepts为空的情况，添加用户所属部门
+    if (hasDataScope2WithEmptyCheckedDepts && userDepartmentId) {
+      allowedDepartmentIds.add(userDepartmentId);
+    }
+    
+    return Array.from(allowedDepartmentIds);
+  };
+  
+  // 监听部门选择变化，更新跟进人列表
+  watch(() => searchForm.departmentId, async (newDeptId) => {
+    if (newDeptId) {
+      // 选择了具体部门：加载该部门的员工列表
+      const deptId = Array.isArray(newDeptId) ? newDeptId[newDeptId.length - 1] : newDeptId;
+      await getFollowerListByDepartment([deptId]);
+    } else {
+      // 没有选择部门：加载用户权限范围内的所有部门人员
+      const allowedDeptIds = getAllowedDepartmentIds();
+      await getFollowerListByDepartment(allowedDeptIds);
+    }
+  }, { immediate: true });
+  
+  // 根据允许的部门ID过滤部门树
+  const filterByAllowedDepartments = (nodes: DivisionItem[]): DivisionItem[] => {
+    const result: DivisionItem[] = [];
+    
+    for (const node of nodes) {
+      if (allowedDepartmentIds.has(node.id)) {
+        const newNode = { ...node };
+        if (node.children && node.children.length > 0) {
+          newNode.children = filterByAllowedDepartments(node.children);
+        }
+        result.push(newNode);
+      } else if (node.children && node.children.length > 0) {
+        // 检查子节点是否有允许的部门
+        const filteredChildren = filterByAllowedDepartments(node.children);
+        if (filteredChildren.length > 0) {
+          const newNode = { ...node, children: filteredChildren };
+          result.push(newNode);
+        }
+      }
+    }
+    
+    return result;
+  };
+  
+  const filteredTree = filterByAllowedDepartments(departmentTree.value);
+  return convertToCascaderFormat(filteredTree);
+});
 
 // 弹窗布局配置
 const layoutMode = computed(() => {
@@ -305,21 +562,10 @@ const layoutMode = computed(() => {
 const customerTypeOption = ref(dictFilter("customerTypeId"));
 const statusOption = ref(dictFilter("progressStatusArr"));
 const intentionOption = ref(dictFilter("intentionStatusArr"));
-const isHouseOption = ref(dictFilter("isStatus"));
-const isCarOption = ref(dictFilter("isStatus"));
-const isCompanyOption = ref(dictFilter("isStatus"));
-const isCreditOption = ref(dictFilter("isStatus"));
-const isInsuranceOption = ref(dictFilter("isStatus"));
-const isWorkOption = ref(dictFilter("isStatus"));
-const isFundOption = ref(dictFilter("isStatus"));
-const isSocialOption = ref(dictFilter("isStatus"));
+// 共用字典选项
+const isStatusOption = ref(dictFilter("isStatus"));
 const singlePieceTypeOption = ref(dictFilter("singlePieceTypeArr"));
 const sexOption = ref(dictFilter("gender"));
-const isReassignOption = ref(dictFilter("isStatus"));
-const isQuitOption = ref(dictFilter("isStatus"));
-const isRepeatOption = ref(dictFilter("isStatus"));
-const starStatusOption = ref(dictFilter("isStatus"));
-const isLockOption = ref(dictFilter("isStatus"));
 
 // 渠道来源选项
 const channelOption = ref<{value: number, name: string}[]>([]);
@@ -348,7 +594,7 @@ const searchForm = reactive({
     mobile: '',
     moneyDemand: undefined,
     channelName: undefined,
-    userName: undefined,
+    userId: undefined,
     customerType: undefined,
     status: undefined,
     intention: undefined,
@@ -453,8 +699,8 @@ const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number
     if (searchForm.channelName) {
         params.channelName = searchForm.channelName;
     }
-    if (searchForm.userName) {
-        params.userName = searchForm.userName;
+    if (searchForm.userId) {
+        params.userId = searchForm.userId;
     }
     if (searchForm.customerType) {
         params.customerType = searchForm.customerType;
@@ -517,7 +763,7 @@ const handleReset = () => {
     searchForm.mobile = '';
     searchForm.moneyDemand = undefined;
     searchForm.channelName = undefined;
-    searchForm.userName = undefined;
+    searchForm.userId = undefined;
     searchForm.customerType = undefined;
     searchForm.status = undefined;
     searchForm.intention = undefined;
@@ -669,6 +915,8 @@ onMounted(async () => {
     await loadData();
     // 加载渠道数据
     await fetchChannelData();
+    // 加载部门树数据
+    await getDepartmentTree();
 })
 
 </script>
