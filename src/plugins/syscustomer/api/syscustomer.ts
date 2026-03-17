@@ -13,7 +13,7 @@ export interface SysCustomerData {
     moneyDemand: number; // 需求金额
     channelName: number; // 渠道来源
     userName: number; // 跟进人
-    customerType: number; // 星级
+  customerStar: number; // 星级
     status: number; // 业务阶段
     intention: number; // 客户有效
     lastTime: string; // 最后操作时间
@@ -76,7 +76,7 @@ export interface SysCustomerListParams {
     moneyDemand?: number; // 需求金额
     channelName?: number; // 渠道来源
     userName?: number; // 跟进人
-    customerType?: number; // 星级
+  customerStar?: number; // 星级
     status?: number; // 业务阶段
     intention?: number; // 客户有效
     lastTime?: string; // 最后操作时间
