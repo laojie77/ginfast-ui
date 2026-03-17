@@ -168,11 +168,29 @@
                             {{ channelOption.find(item => item.value === record.channelName)?.name || '' }}
                         </template>
                     </a-table-column>
-                  <a-table-column title="业务阶段" data-index="status"  :width="100"  ellipsis tooltip>
+                  <a-table-column title="业务阶段" data-index="status"  :width="200"  ellipsis tooltip>
                         <template #cell="{ record }">
-                          <a-tag  size="small" :color="record.status === 0 ? 'red' : 'arcoblue'">
-                            {{ statusOption[record.status]?.name }}
-                          </a-tag>
+                          <a-dropdown @select="(value) => handleStatusChange(record, value)">
+                            <a-tag
+                              size="small"
+                              :color="
+                            record.status === 0 ? '' :
+                            record.status === 7 ? 'green' :
+                            'arcoblue'
+                          "
+                              style="cursor: pointer;">
+                              {{ getStatusDisplayText(record) }}
+                            </a-tag>
+                            <template #content>
+                              <a-doption 
+                                v-for="item in statusOption" 
+                                :key="item.value" 
+                                :value="Number(item.value)"
+                                :disabled="Number(item.value) === record.status">
+                                {{ item.name }}
+                              </a-doption>
+                            </template>
+                          </a-dropdown>
                         </template>
                     </a-table-column>
                   <a-table-column title="客户有效" data-index="intention"  :width="100"  ellipsis tooltip>
@@ -316,6 +334,21 @@
                 </a-form-item>
             </a-form>
         </a-modal>
+
+        <!-- 状态更新弹窗 -->
+        <a-modal v-model:visible="statusModalVisible" title="更新业务阶段备注" :on-before-ok="handleStatusSave"
+            @cancel="handleStatusCancel" :width="400">
+            <a-form :model="statusUpdateForm" ref="statusFormRef">
+                <a-form-item label="新状态">
+                    <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus)">
+                        {{ statusOption.find(item => Number(item.value) === statusUpdateForm.newStatus)?.name }}
+                    </a-tag>
+                </a-form-item>
+                <a-form-item field="progressRemark" label="备注" >
+                    <a-textarea v-model="statusUpdateForm.progressRemark" placeholder="请输入进度备注" :rows="4" />
+                </a-form-item>
+            </a-form>
+        </a-modal>
     </div>
 </div>  
 </template>
@@ -323,6 +356,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { Message } from '@arco-design/web-vue';
+import { IconDown } from '@arco-design/web-vue/es/icon';
 import { useSysCustomerPluginHook } from '../../hooks/syscustomer';
 import type { SysCustomerData } from '../../api/syscustomer';
 import { formatTime } from '@/globals';
@@ -606,6 +640,16 @@ const {
 
 const modalVisible = ref(false);
 const formRef = ref();
+
+// 状态更新相关
+const statusModalVisible = ref(false);
+const statusFormRef = ref();
+const statusUpdateForm = reactive({
+    customerId: undefined as number | undefined,
+    currentStatus: undefined as number | undefined,
+    newStatus: undefined as number | undefined,
+    progressRemark: ''
+});
 
 // 搜索表单
 const searchForm = reactive({
@@ -947,6 +991,101 @@ const handleSave = async () => {
 // 取消操作
 const handleCancel = () => {
     modalVisible.value = false;
+};
+
+// 处理状态变化
+const handleStatusChange = (record: SysCustomerData, newStatus: number) => {
+    statusUpdateForm.customerId = record.id;
+    statusUpdateForm.currentStatus = Number(record.status);
+    statusUpdateForm.newStatus = Number(newStatus);
+    statusUpdateForm.progressRemark = '';
+    statusModalVisible.value = true;
+};
+
+// 获取状态颜色
+const getStatusColor = (status: number) => {
+    return status === 0 ? '' : status === 7 ? 'green' : 'arcoblue';
+};
+
+// 获取状态显示文本（包含进度备注）
+const getStatusDisplayText = (record: SysCustomerData) => {
+    const statusName = statusOption.value.find(item => Number(item.value) === record.status)?.name || '';
+    
+    // 解析extra字段获取progress_remark
+    let progressRemark = '';
+    if (record.extra && typeof record.extra === 'string') {
+        try {
+            const extraObj = JSON.parse(record.extra);
+            if (extraObj.progress_remark) {
+                progressRemark = String(extraObj.progress_remark).trim();
+                // 移除可能的多余字符
+                progressRemark = progressRemark.replace(/\s*-\s*$/, '');
+            }
+        } catch (error) {
+            console.error('解析extra字段失败:', error);
+        }
+    }
+    
+    // 如果有进度备注，则拼接显示
+    return progressRemark ? `${statusName} - ${progressRemark}` : statusName;
+};
+
+// 保存状态更新
+const handleStatusSave = async () => {
+    const isValid = await statusFormRef.value?.validate();
+    if (isValid) return false;
+    
+    try {
+        // 获取当前记录
+        const currentRecord = dataList.value.find(item => item.id === statusUpdateForm.customerId);
+        if (!currentRecord) {
+            Message.error('未找到要更新的记录');
+            return false;
+        }
+        
+        // 准备更新数据
+        const updatePayload = {
+            ...currentRecord,
+            status: Number(statusUpdateForm.newStatus)
+        };
+        
+        // 处理extra字段，添加progress_remark
+        let extraObj: Record<string, any> = {};
+        if (currentRecord.extra && typeof currentRecord.extra === 'string') {
+            try {
+                extraObj = JSON.parse(currentRecord.extra);
+            } catch (error) {
+                console.error('解析extra字段失败:', error);
+            }
+        }
+        
+        // 添加progress_remark到extra字段
+        extraObj.progress_remark = statusUpdateForm.progressRemark;
+        updatePayload.extra = JSON.stringify(extraObj);
+        
+        // 调用更新API
+        await updateData(updatePayload);
+        
+        // 重新加载数据
+        await loadData();
+        
+        statusModalVisible.value = false;
+        Message.success('业务阶段更新成功');
+        return true;
+    } catch (error) {
+        console.error('更新状态失败:', error);
+        Message.error('更新状态失败');
+        return false;
+    }
+};
+
+// 取消状态更新
+const handleStatusCancel = () => {
+    statusModalVisible.value = false;
+    statusUpdateForm.customerId = undefined;
+    statusUpdateForm.currentStatus = undefined;
+    statusUpdateForm.newStatus = undefined;
+    statusUpdateForm.progressRemark = '';
 };
 
 // 切换锁定状态
