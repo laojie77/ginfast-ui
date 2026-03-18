@@ -180,17 +180,70 @@
                         </a-form>
                     </a-card>
                 </a-tab-pane>
+
+                <!-- 客户资质配置 -->
+                <a-tab-pane key="customerExtra" title="客户资质配置">
+                    <div class="customer-extra-container">
+                        <div class="customer-extra-content">
+                            <div v-for="(options, category) in configData.customerExtra" :key="category" class="category-section">
+                                <a-card :bordered="false" class="category-card">
+                                    <template #title>
+                                        <div class="category-title">
+                                            <icon-settings class="category-icon" />
+                                            <span>{{ getCategoryLabel(category) }}</span>
+                                        </div>
+                                    </template>
+                                    
+                                    <a-form :layout="layoutMode.layout" auto-label-width>
+                                        <a-row :gutter="[16, 16]">
+                                            <a-col v-for="(label, value) in options" :key="value" :span="isMobile ? 24 : 8">
+                                                <a-form-item :label="`选项 ${value}`" class="option-item">
+                                                    <a-input 
+                                                        v-model="configData.customerExtra[category][value]" 
+                                                        :placeholder="`请输入${getCategoryLabel(category)}选项${value}的名称`"
+                                                        size="large" />
+                                                </a-form-item>
+                                            </a-col>
+                                        </a-row>
+                                        
+                                        <a-divider />
+                                        
+                                        <div class="action-buttons">
+                                            <a-space>
+                                                <a-button type="primary" @click="addOption(category)" size="small">
+                                                    <template #icon><icon-plus /></template>
+                                                    添加选项
+                                                </a-button>
+                                                <a-button 
+                                                    type="outline" 
+                                                    status="danger" 
+                                                    @click="removeLastOption(category)" 
+                                                    :disabled="Object.keys(options).length <= 1"
+                                                    size="small">
+                                                    <template #icon><icon-minus /></template>
+                                                    删除选项
+                                                </a-button>
+                                            </a-space>
+                                        </div>
+                                    </a-form>
+                                </a-card>
+                            </div>
+                        </div>
+                    </div>
+                </a-tab-pane>
             </a-tabs>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { IconPlus, IconMinus, IconSettings } from '@arco-design/web-vue/es/icon';
 import { useSysConfigStore } from '@/store/modules/sys-config';
 // 引入图片上传组件
 import ImageUpload from '@/components/upload/image-upload.vue';
 import { useDevicesSize } from "@/hooks/useDevicesSize";
+
 const { isMobile } = useDevicesSize();
 const layoutMode = computed(() => {
   let info = {
@@ -206,7 +259,6 @@ const layoutMode = computed(() => {
   return isMobile.value ? info.mobile : info.desktop;
 });
 
-
 const activeTab = ref('server');
 
 // 使用系统配置 store
@@ -216,8 +268,46 @@ const sysConfigStore = useSysConfigStore();
 const configData = ref({
     system: sysConfigStore.systemConfig,
     captcha: sysConfigStore.captchaConfig,
-    safe: sysConfigStore.safeConfig
+    safe: sysConfigStore.safeConfig,
+    customerExtra: {}
 });
+
+// 客户资质类别标签映射
+const categoryLabels = {
+    occupation: '职业',
+    house: '房产',
+    car: '车产',
+    creditcard: '信用卡',
+    insurance: '商业保险',
+    housefund: '公积金',
+    socialinsurance: '社保',
+    zhimascore: '芝麻分',
+    salarymoney: '月薪',
+    education: '学历'
+};
+
+// 获取类别标签
+const getCategoryLabel = (category: string) => {
+    return categoryLabels[category] || category;
+};
+
+// 添加选项
+const addOption = (category: string) => {
+    const options = configData.value.customerExtra[category];
+    const maxKey = Math.max(...Object.keys(options).map(k => parseInt(k)));
+    const newKey = (maxKey + 1).toString();
+    options[newKey] = '';
+};
+
+// 删除最后一个选项
+const removeLastOption = (category: string) => {
+    const options = configData.value.customerExtra[category];
+    const keys = Object.keys(options);
+    if (keys.length > 1) {
+        const maxKey = Math.max(...keys.map(k => parseInt(k))).toString();
+        delete options[maxKey];
+    }
+};
 
 // 获取配置信息
 const getConfig = async () => {
@@ -227,7 +317,8 @@ const getConfig = async () => {
         configData.value = {
             system: sysConfigStore.systemConfig,
             captcha: sysConfigStore.captchaConfig,
-            safe: sysConfigStore.safeConfig
+            safe: sysConfigStore.safeConfig,
+            customerExtra: sysConfigStore.customerExtraConfig || {}
         };
     } catch (error) {
         console.error('获取配置失败:', error);
@@ -256,7 +347,166 @@ onMounted(() => {
     margin-bottom: 1rem;
 }
 
+.mb-6 {
+    margin-bottom: 1.5rem;
+}
+
 :deep(.arco-card-body) {
     padding: 20px;
+}
+
+// 客户资质配置样式
+.customer-extra-container {
+    height: calc(100vh - 250px); // 减少高度计算，给更多显示空间
+    overflow: hidden;
+    
+    .customer-extra-content {
+        height: 100%;
+        overflow-y: auto;
+        padding-right: 8px;
+        padding-bottom: 60px; // 增加底部padding确保最后一项完全显示
+        
+        // 自定义滚动条样式
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        &::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+            
+            &:hover {
+                background: #a8a8a8;
+            }
+        }
+    }
+}
+
+.category-section {
+    margin-bottom: 24px;
+
+    // 确保最后一个元素也有足够的底部间距
+    &:last-child {
+        //margin-bottom: 40px; // 增加最后一个卡片的底部间距
+    }
+}
+
+.category-card {
+    border: 1px solid #e5e6eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    
+    &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        border-color: #165dff;
+    }
+    
+    :deep(.arco-card-header) {
+        background: linear-gradient(135deg, #f7f8fa 0%, #ffffff 100%);
+        border-bottom: 1px solid #e5e6eb;
+        padding: 16px 20px;
+    }
+    
+    :deep(.arco-card-body) {
+        padding: 20px;
+    }
+}
+
+.category-title {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d2129;
+    
+    .category-icon {
+        margin-right: 8px;
+        color: #165dff;
+        font-size: 18px;
+    }
+}
+
+.option-item {
+    :deep(.arco-form-item-label) {
+        font-weight: 500;
+        color: #4e5969;
+    }
+    
+    :deep(.arco-input) {
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+            border-color: #165dff;
+        }
+        
+        &:focus {
+            box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.1);
+        }
+    }
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+    
+    :deep(.arco-btn) {
+        border-radius: 6px;
+        font-weight: 500;
+        
+        &.arco-btn-primary {
+            background: linear-gradient(135deg, #165dff 0%, #246fff 100%);
+            border: none;
+            
+            &:hover {
+                background: linear-gradient(135deg, #0e42d2 0%, #1a5cff 100%);
+            }
+        }
+        
+        &.arco-btn-outline {
+            &.arco-btn-status-danger {
+                &:hover {
+                    background: #fff2f0;
+                }
+            }
+        }
+    }
+}
+
+:deep(.arco-divider) {
+    margin: 16px 0;
+    border-color: #f2f3f5;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+    .customer-extra-container {
+        height: calc(100vh - 150px);
+    }
+    
+    .category-card {
+        :deep(.arco-card-header) {
+            padding: 12px 16px;
+        }
+        
+        :deep(.arco-card-body) {
+            padding: 16px;
+        }
+    }
+    
+    .category-title {
+        font-size: 14px;
+        
+        .category-icon {
+            font-size: 16px;
+        }
+    }
 }
 </style>

@@ -42,6 +42,9 @@ const sysConfigStore = () => {
         length: 0
     });
 
+    // 客户资质配置数据
+    const customerExtraConfig = ref<any>({});
+
     // 配置加载状态
     const loading = ref(false);
 
@@ -65,6 +68,7 @@ const sysConfigStore = () => {
                 systemConfig.value = data.system || systemConfig.value;
                 safeConfig.value = data.safe || safeConfig.value;
                 captchaConfig.value = data.captcha || captchaConfig.value;
+                customerExtraConfig.value = data.customerExtra || {};
             }
 
             return data;
@@ -92,6 +96,9 @@ const sysConfigStore = () => {
                 }
                 if (configData.captcha) {
                     captchaConfig.value = { ...captchaConfig.value, ...configData.captcha };
+                }
+                if (configData.customerExtra) {
+                    customerExtraConfig.value = { ...customerExtraConfig.value, ...configData.customerExtra };
                 }
             }
 
@@ -128,12 +135,15 @@ const sysConfigStore = () => {
             open: false,
             length: 0
         };
+
+        customerExtraConfig.value = {};
     }
 
     return {
         systemConfig,
         safeConfig,
         captchaConfig,
+        customerExtraConfig,
         loading,
         systemLogo,
         systemIcon,
@@ -147,6 +157,7 @@ export const useSysConfigStore = defineStore("sys-config", sysConfigStore, {
     persist: persistedstateConfig("sys-config", [
         "systemConfig",
         "safeConfig",
-        "captchaConfig"
+        "captchaConfig",
+        "customerExtraConfig"
     ])
 });

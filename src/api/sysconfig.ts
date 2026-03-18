@@ -42,6 +42,7 @@ export interface ConfigRequestData {
     system: SystemConfig;
     safe: SafeConfig;
     captcha: CaptchaConfig;
+    customerExtra?: any;
 }
 
 // 获取配置响应结果
@@ -58,6 +59,5 @@ export const getConfigAPI = () => {
 export const updateConfigAPI = (data: ConfigRequestData) => {
     return http.request<BaseResult>("put", baseUrlApi("config/update"), { data });
 };
-
 
 
