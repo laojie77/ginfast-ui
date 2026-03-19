@@ -1,4 +1,6 @@
 import { http } from '@/utils/http';
+import { BaseResult } from "@/api/types.ts";
+import { baseUrlApi } from "@/api/utils.ts";
 
 // 客户有效性标签数据类型
 export interface CustomerValidData {
@@ -57,7 +59,7 @@ export const updateCustomerValid = (data: CustomerValidUpdateParams) => {
 
 // 删除客户有效性标签
 export const deleteCustomerValid = (id: number) => {
-  return http.request<string>('delete', `/api/customerValid/${id}`);
+  return http.request<BaseResult>("delete", "/api/customerValid/delete", { data: { id } });
 };
 
 // 获取客户有效性标签详情

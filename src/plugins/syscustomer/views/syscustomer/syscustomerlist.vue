@@ -168,19 +168,21 @@
                             {{ channelOption.find(item => item.value === record.channelId)?.name || '' }}
                         </template>
                     </a-table-column>
-                  <a-table-column title="业务阶段" data-index="status"  :width="200"  ellipsis tooltip>
+                  <a-table-column title="业务阶段" data-index="status"  :width="200" >
                         <template #cell="{ record }">
                           <a-dropdown @select="(value) => handleStatusChange(record, value)">
-                            <a-tag
-                              size="small"
-                              :color="
-                            record.status === 0 ? '' :
-                            record.status === 7 ? 'green' :
-                            'arcoblue'
-                          "
-                              style="cursor: pointer;">
-                              {{ getStatusDisplayText(record) }}
-                            </a-tag>
+                            <a-tooltip :content="getStatusDisplayText(record)" position="top">
+                              <a-tag
+                                size="small"
+                                :color="
+                              record.status === 0 ? '' :
+                              record.status === 7 ? 'green' :
+                              'arcoblue'
+                            "
+                                :class="['dropdown-tag', getStatusDisplayText(record).length > 20 ? 'multiline' : '']">
+                                {{ getStatusDisplayText(record) }}
+                              </a-tag>
+                            </a-tooltip>
                             <template #content>
                               <a-doption 
                                 v-for="item in statusOption" 
@@ -193,12 +195,17 @@
                           </a-dropdown>
                         </template>
                     </a-table-column>
-                  <a-table-column title="客户有效" data-index="intention"  :width="150"  ellipsis tooltip>
+                  <a-table-column title="客户有效" data-index="intention"  :width="200">
                         <template #cell="{ record }">
                           <a-dropdown @select="(value) => handleIntentionChange(record, value)">
-                            <a-tag size="small" :color="record.intention === 0 ? '' : record.intention === 1 ? 'green' : record.intention === 2 ? 'red' : 'orange'" style="cursor: pointer;">
-                              {{ getIntentionDisplayText(record) }}
-                            </a-tag>
+                            <a-tooltip :content="getIntentionDisplayText(record)" position="top">
+                              <a-tag 
+                                size="small" 
+                                :color="record.intention === 0 ? '' : record.intention === 1 ? 'green' : record.intention === 2 ? 'red' : 'orange'" 
+                                :class="['dropdown-tag', getIntentionDisplayText(record).length > 20 ? 'multiline' : '']">
+                                {{ getIntentionDisplayText(record) }}
+                              </a-tag>
+                            </a-tooltip>
                             <template #content>
                               <a-doption
                                 v-for="item in intentionOption"
@@ -211,11 +218,27 @@
                           </a-dropdown>
                         </template>
                     </a-table-column>
-                  <a-table-column title="星级" data-index="customerStar"  :width="80"  ellipsis tooltip >
+                  <a-table-column title="星级" data-index="customerStar"  :width="120" >
                     <template #cell="{ record }">
-                      <a-tag  size="small" :color="[0,1, 2].includes(record.customerStar) ? 'red' : 'arcoblue'">
-                        {{ customerStarOption[record.customerStar]?.name }}
-                      </a-tag>
+                      <a-dropdown @select="(value) => handleCustomerStarChange(record, value)">
+                        <a-tooltip :content="getCustomerStarDisplayText(record)" position="top">
+                          <a-tag 
+                            size="small" 
+                            :color="[0,1, 2].includes(record.customerStar) ? 'red' : 'arcoblue'"
+                            class="dropdown-tag">
+                            {{ getCustomerStarDisplayText(record) }}
+                          </a-tag>
+                        </a-tooltip>
+                        <template #content>
+                          <a-doption 
+                            v-for="item in customerStarOption" 
+                            :key="item.value" 
+                            :value="Number(item.value)"
+                            :style="{ color: Number(item.value) === record.customerStar ? '#165dff' : '' }">
+                            {{ item.name }}
+                          </a-doption>
+                        </template>
+                      </a-dropdown>
                     </template>
                   </a-table-column>
                     <a-table-column title="跟进人" data-index="userName"  :width="100"  ellipsis tooltip>
@@ -274,8 +297,11 @@
                     <a-table-column title="操作" :width="200" :fixed="isMobile ? undefined : 'right'">
                         <template #cell="{ record }">
                             <a-space>
-                                <a-button size="small" type="primary" @click="handleEdit(record)" v-hasPerm="['plugins:syscustomersyscustomer:edit']">
+                                <a-button size="small" type="primary" @click="handleViewDetail(record)" v-hasPerm="['plugins:syscustomersyscustomer:edit']">
                                   详情
+                                </a-button>
+                                <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:syscustomersyscustomer:edit']">
+                                  编辑
                                 </a-button>
                                 <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.id)">
                                     <a-button size="small" status="danger" v-hasPerm="['plugins:syscustomersyscustomer:delete']">
@@ -325,16 +351,18 @@
                     <a-space direction="vertical" style="width: 100%">
                         <div v-for="property in ALL_EXTRA_PROPERTIES" :key="property" style="margin-bottom: 16px;">
                             <div style="margin-bottom: 8px; font-weight: 500;">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
-                            <a-radio-group 
-                                :value="getExtraPropertyValue(property)" 
-                                @change="(value) => setExtraPropertyValue(property, value)">
-                                <a-radio 
+                            <a-select 
+                                :model-value="getExtraPropertyValue(property)" 
+                                @update:model-value="(value) => setExtraPropertyValue(property, value)"
+                                :placeholder="`请选择${EXTRA_PROPERTY_LABELS[property]}`"
+                                allow-clear>
+                                <a-option 
                                     v-for="(label, value) in (CUSTOMER_EXTRA_OPTIONS[property] || {})" 
                                     :key="value" 
                                     :value="value">
                                     {{ label }}
-                                </a-radio>
-                            </a-radio-group>
+                                </a-option>
+                            </a-select>
                         </div>
                     </a-space>
                 </a-form-item>
@@ -440,6 +468,22 @@
             </a-form>
         </a-modal>
     </div>
+
+    <!-- 客户详情抽屉 -->
+    <SysCustomerDetail
+      v-model:visible="detailVisible"
+      :customer-id="selectedCustomerId"
+      :customer-data="selectedCustomerData"
+      :channel-options="channelOption"
+      :follower-options="followerOptions"
+      :department-tree="departmentTree"
+      :status-options="statusOption"
+      :intention-options="intentionOption"
+      :star-options="customerStarOption"
+      :sex-options="sexOption"
+      :single-piece-type-options="singlePieceTypeOption"
+      @close="handleDetailClose"
+    />
 </div>  
 </template>
 
@@ -454,6 +498,7 @@ import { getSysChannelCompanyList } from '../../../syschannelcompany/api/syschan
 import type { SysChannelCompanyData, SysChannelCompanyListParams } from '../../../syschannelcompany/api/syschannelcompany';
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid } from '@/api/customervalid';
 import type { CustomerValidData, CustomerValidCreateParams, CustomerValidUpdateParams } from '@/api/customervalid';
+import SysCustomerDetail from './syscustomerdetail.vue';
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
@@ -779,6 +824,11 @@ const validRules = {
     status: [{ required: true, message: '请选择状态' }]
 };
 
+// 详情抽屉相关
+const detailVisible = ref(false);
+const selectedCustomerId = ref<number>();
+const selectedCustomerData = ref<SysCustomerData>();
+
 // 搜索表单
 const searchForm = reactive({
     num: '',
@@ -1044,28 +1094,57 @@ const handleCreate = () => {
     modalVisible.value = true;
 };
 
+// 查看详情
+const handleViewDetail = async (record: SysCustomerData) => {
+    try {
+        // 获取详情数据
+        const detail = await getDetail(record.id);
+        selectedCustomerId.value = record.id;
+        selectedCustomerData.value = detail.data;
+        detailVisible.value = true;
+    } catch (error) {
+        console.error('获取客户详情失败:', error);
+        Message.error('获取客户详情失败');
+    }
+};
+
+// 关闭详情抽屉
+const handleDetailClose = () => {
+    detailVisible.value = false;
+    selectedCustomerId.value = undefined;
+    selectedCustomerData.value = undefined;
+};
+
 // 编辑数据
 const handleEdit = async (record: SysCustomerData) => {
-    // 获取详情
-    const detail = await getDetail(record.id);
-    // 赋值给编辑数据
-    Object.assign(editingData, detail.data);
-    
-// 处理extra字段：将JSON字符串转换为数组
-    if (editingData.extra && typeof editingData.extra === 'string') {
-        try {
-            const extraObj = JSON.parse(editingData.extra);
-            // 将新格式的extra对象转换为editingData的格式
-            editingData.extraData = extraObj;
-        } catch (error) {
-            console.error('解析extra字段失败:', error);
+    try {
+        // 获取详情
+        const detail = await getDetail(record.id);
+        
+        // 赋值给编辑数据
+        Object.assign(editingData, detail.data);
+        
+        // 处理extra字段：将JSON字符串转换为对象
+        if (editingData.extra && typeof editingData.extra === 'string') {
+            try {
+                const extraObj = JSON.parse(editingData.extra);
+                editingData.extraData = extraObj;
+            } catch (error) {
+                console.error('解析extra字段失败:', error);
+                editingData.extraData = {};
+            }
+        } else if (editingData.extra && typeof editingData.extra === 'object') {
+            // 如果extra已经是对象，直接使用
+            editingData.extraData = editingData.extra;
+        } else {
             editingData.extraData = {};
         }
-    } else if (!editingData.extra) {
-        editingData.extraData = {};
+        
+        modalVisible.value = true;
+    } catch (error) {
+        console.error('编辑数据失败:', error);
+        Message.error('获取数据失败');
     }
-    
-    modalVisible.value = true;
 };
 
 // 删除数据
@@ -1120,7 +1199,9 @@ const handleCancel = () => {
 
 // 获取extra属性值
 const getExtraPropertyValue = (property: string) => {
-    return editingData.extraData?.[property] || '';
+    const value = editingData.extraData?.[property];
+    // 确保返回字符串类型，因为下拉框需要字符串值
+    return value ? String(value) : '';
 };
 
 // 设置extra属性值
@@ -1283,10 +1364,35 @@ const getIntentionDisplayText = (record: SysCustomerData) => {
     return validName ? `${intentionName} - ${validName}` : intentionName;
 };
 
+// 获取星级显示文本
+const getCustomerStarDisplayText = (record: SysCustomerData) => {
+    return customerStarOption.value.find(item => Number(item.value) === record.customerStar)?.name || '';
+};
+
+// 处理星级变化
+const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar: number) => {
+    try {
+        // 直接更新星级，不需要弹窗
+        const updatePayload = {
+            ...record,
+            customerStar: Number(newCustomerStar)
+        };
+        
+        // 调用更新API
+        await updateData(updatePayload);
+        
+        // 重新加载数据
+        await loadData();
+        
+        Message.success('星级更新成功');
+    } catch (error) {
+        console.error('更新星级失败:', error);
+        Message.error('更新星级失败');
+    }
+};
+
 // 处理客户有效性变化
 const handleIntentionChange = (record: SysCustomerData, newIntention: number) => {
-    console.log('handleIntentionChange 被调用:', { record, newIntention });
-    
     if (newIntention === 0) {
         // intention=0 待确认，不弹窗，直接更新
         updateCustomerIntention(record, newIntention);
@@ -1298,13 +1404,9 @@ const handleIntentionChange = (record: SysCustomerData, newIntention: number) =>
     validUpdateForm.newIntention = Number(newIntention);
     validUpdateForm.validId = undefined;
     
-    console.log('设置弹窗数据:', validUpdateForm);
-    
     // 加载对应类型的客户有效性标签选项
     loadCustomerValidOptions(newIntention);
     validModalVisible.value = true;
-    
-    console.log('弹窗应该显示了:', validModalVisible.value);
 };
 
 // 加载客户有效性标签选项
@@ -1577,11 +1679,30 @@ onMounted(async () => {
     await getDepartmentTree();
     // 加载客户有效性标签数据
     await loadAllCustomerValidOptions();
-    // 客户资质配置已通过系统配置store加载，无需单独请��
+    // 确保系统配置已加载
+    await sysConfigStore.getConfig();
 })
 
 </script>
 
 <style scoped lang="scss">
-
+.dropdown-tag {
+  cursor: pointer;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+  line-height: 1.4;
+  max-height: 2.8em;
+  white-space: nowrap;
+  
+  // 当内容需要换行时，使用多行省略
+  &.multiline {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+  }
+}
 </style>
