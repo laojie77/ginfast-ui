@@ -1,5 +1,11 @@
 import { ref, computed } from 'vue';
-import type { SysCustomerTracesData, SysCustomerTracesListParams, SysCustomerTracesListResult, SysCustomerTracesResult } from '../api/syscustomertraces';
+import type {
+    SysCustomerTracesCreateParams,
+    SysCustomerTracesData,
+    SysCustomerTracesListParams,
+    SysCustomerTracesListResult,
+    SysCustomerTracesResult
+} from '../api/syscustomertraces';
 import {
     getSysCustomerTracesList,
     createSysCustomerTraces,
@@ -62,7 +68,7 @@ export const useSysCustomerTracesPluginHook = () => {
         }
     };
 
-    const createData = async (data: Omit<SysCustomerTracesData, 'id'>) => {
+    const createData = async (data: SysCustomerTracesCreateParams) => {
         try {
             const response = await createSysCustomerTraces(data);
             return response;

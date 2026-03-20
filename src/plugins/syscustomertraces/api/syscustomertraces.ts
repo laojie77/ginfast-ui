@@ -8,6 +8,7 @@ export interface SysCustomerTracesData {
     id: number; // Id
     customerId: number; // 客户
     userId: number; // 操作用户
+    tenantId: number; // 所属平台公司
     data: string; // 跟进内容
     createdAt: string; // CreatedAt
     updatedAt: string; // UpdatedAt
