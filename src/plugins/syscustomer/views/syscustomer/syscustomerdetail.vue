@@ -119,7 +119,7 @@
                   <div class="customer-mini-tags">
                     <a-tooltip :content="localCustomer?.isLock === 1 ? '点击解锁客户' : '点击锁定客户'" position="top">
                       <a-tag 
-                        :color="localCustomer?.isLock === 1 ? 'red' : 'green'"
+                        :color="localCustomer?.isLock === 1 ? 'red' : 'blue'"
                         size="small"
                         @click="handleToggleLock"
                         style="cursor: pointer;"
@@ -127,8 +127,11 @@
                         {{ localCustomer?.isLock === 1 ? "已锁定" : "未锁定" }}
                       </a-tag>
                     </a-tooltip>
-                    <a-tag :color="localCustomer?.isRepeat === 1 ? 'red' : 'gray'" size="small">
+                    <a-tag :color="localCustomer?.isRepeat === 1 ? 'red' : 'blue'" size="small">
                       {{ localCustomer?.isRepeat === 1 ? "重复客户" : "正常数据" }}
+                    </a-tag>
+                    <a-tag :color="localCustomer?.from === 1 ? 'blue' : 'red'" size="small">
+                      {{ fromOption[localCustomer?.from]?.name || '未知来源' }}
                     </a-tag>
                   </div>
                 </div>
@@ -188,7 +191,12 @@
                 <div class="remark-block">
                   <div class="remark-title">上级评价</div>
                   <div class="remark-content">
-                    {{ localCustomer?.customerComment || "暂无评价" }}
+                    <a-tag color="red">
+                      <template #icon>
+                        <icon-subscribe-add/>
+                      </template>
+                      {{ localCustomer?.customerComment || "暂无评价" }}
+                    </a-tag>
                   </div>
                 </div>
               </div>
@@ -211,6 +219,7 @@
                 <a-badge :count="followRecords.length" />
               </div>
               <div ref="messagesContainer" class="chat-messages">
+
                 <template v-if="followRecords.length">
                   <div v-for="record in followRecords" :key="record.id" class="message-item">
                     <div class="message-left">
@@ -379,18 +388,18 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import { IconUser } from "@arco-design/web-vue/es/icon";
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid, type CustomerValidData } from "@/api/customervalid";
 import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import { getSysCustomer, updateSysCustomer, type SysCustomerData } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
+
 import {
   createSysCustomerTraces,
   getSysCustomerTracesList,
   type SysCustomerTracesData
 } from "../../../syscustomertraces/api/syscustomertraces";
-
+const fromOption = ref(dictFilter("from"));
 type CustomerDetailData = Partial<SysCustomerData> &
   Record<string, any> & {
     id?: number;

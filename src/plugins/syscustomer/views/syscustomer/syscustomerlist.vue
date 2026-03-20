@@ -283,9 +283,9 @@
                 {{ followerOptions.find(item => item.value === record.userId)?.name || "" }}
               </template>
             </a-table-column>
-            <a-table-column title="需求金额" data-index="moneyDemand" :width="100" ellipsis tooltip />
-            <a-table-column title="客户备注" data-index="remarks" :width="120" ellipsis tooltip />
-            <a-table-column title="分配时间" data-index="allotTime" :width="120" ellipsis tooltip>
+            <a-table-column title="金额" data-index="moneyDemand" :width="80" ellipsis tooltip />
+            <a-table-column title="客户备注" data-index="remarks" :width="200" ellipsis tooltip />
+            <a-table-column title="分配时间" data-index="allotTime" :width="200" ellipsis tooltip>
               <template #cell="{ record }">
                 {{ record["allotTime"] ? formatTime(record["allotTime"]) : "" }}
               </template>
@@ -296,6 +296,11 @@
               </template>
             </a-table-column>
             <a-table-column title="所在城市" data-index="city" :width="100" ellipsis tooltip />
+            <a-table-column title="客户来源" data-index="from" :width="100" ellipsis tooltip>
+              <template #cell="{ record }">
+                {{ fromOption[record.from]?.name }}
+              </template>
+            </a-table-column>
             <a-table-column title="再分配" data-index="isReassign" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isReassign === 1 ? 'arcoblue' : 'red'">
@@ -838,6 +843,7 @@ const statusOption = ref(dictFilter("progressStatusArr"));
 const intentionOption = ref(dictFilter("intentionStatusArr"));
 // 共用字典选项
 const isStatusOption = ref(dictFilter("isStatus"));
+const fromOption = ref(dictFilter("from"));
 const isSmsOption = ref(dictFilter("isSms"));
 const taskStatusOption = ref(dictFilter("taskStatus"));
 const singlePieceTypeOption = ref(dictFilter("singlePieceTypeArr"));
