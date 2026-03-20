@@ -119,7 +119,7 @@
                   <div class="customer-mini-tags">
                     <a-tooltip :content="localCustomer?.isLock === 1 ? '点击解锁客户' : '点击锁定客户'" position="top">
                       <a-tag 
-                        :color="localCustomer?.isLock === 1 ? 'red' : 'green'" 
+                        :color="localCustomer?.isLock === 1 ? 'red' : 'green'"
                         size="small"
                         @click="handleToggleLock"
                         style="cursor: pointer;"
@@ -196,7 +196,15 @@
                 <div class="chat-title-wrap">
                   <div class="panel-title panel-title--compact">
                     跟进记录
-                    <span class="panel-title-note"> 分配时间：{{ formatDisplayTime(localCustomer?.allotTime) }} </span>
+                    <span class="panel-title-note">
+                      <a-tag
+                          color="green"
+                          size="small"
+                          style="cursor: pointer;"
+                      >
+                        分配时间：{{ formatDisplayTime(localCustomer?.allotTime) }}
+                      </a-tag>
+                    </span>
                   </div>
                   <div class="chat-subtitle">最新记录显示在最下面，向上滚动查看历史记录</div>
                 </div>
@@ -1267,7 +1275,6 @@ watch(
 
 .panel-title-note {
   margin-left: 10px;
-  color: #86909c;
   font-size: 12px;
   font-weight: 500;
 }
@@ -1403,7 +1410,7 @@ watch(
 
 .remark-block {
   padding: 16px;
-  background: #f8f9fa;
+  background: #fff;
   border: 1px solid #e8ecef;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -1411,21 +1418,21 @@ watch(
 
 .remark-title {
   color: #1d2129;
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e8ecef;
 }
 
 .remark-content {
   color: #1d2129;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .remark-item {
-  padding: 10px 0;
+  padding: 4px 0;
   border-bottom: 1px solid #f0f2f5;
 }
 
@@ -1441,24 +1448,22 @@ watch(
 .remark-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 3px;
   flex-wrap: wrap;
 }
 
 .remark-time {
   color: #86909c;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  background: #f2f3f5;
-  padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .remark-text {
   color: #4e5969;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   word-break: break-word;
 }
 
