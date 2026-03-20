@@ -214,8 +214,8 @@
                 <template v-if="followRecords.length">
                   <div v-for="record in followRecords" :key="record.id" class="message-item">
                     <div class="message-left">
-                      <a-avatar :size="36" class="record-avatar">
-                        {{ record.userName?.charAt(0) || "跟" }}
+                      <a-avatar :size="36" class="record-avatar" :image-url="handleUrl(record.avatar)">
+                        <template v-if="!record.avatar && record.userName">{{ record.userName.charAt(0) }}</template>
                       </a-avatar>
                     </div>
                     <div class="message-right">
@@ -379,11 +379,12 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import { IconPlus } from "@arco-design/web-vue/es/icon";
+import { IconUser } from "@arco-design/web-vue/es/icon";
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid, type CustomerValidData } from "@/api/customervalid";
 import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import { getSysCustomer, updateSysCustomer, type SysCustomerData } from "../../api/syscustomer";
+import { handleUrl } from "@/utils/app";
 import {
   createSysCustomerTraces,
   getSysCustomerTracesList,
@@ -1344,7 +1345,7 @@ watch(
 }
 
 .summary-item {
-  padding: 10px 12px;
+  padding: 5px 12px;
   background: #f7f8fa;
   border-radius: 6px;
 }
