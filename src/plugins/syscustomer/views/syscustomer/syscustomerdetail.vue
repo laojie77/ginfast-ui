@@ -644,13 +644,13 @@ const handleIntentionSelect = async (value: string | number) => {
     return;
   }
   
-  // 设置表单数据
+  // 设置表单数据（不缓存上次选择，直接重置）
   validUpdateForm.currentIntention = currentIntention;
   validUpdateForm.newIntention = newIntention;
-  validUpdateForm.validId = getIntentionValidId();
+  validUpdateForm.validId = undefined; // 重置选择，让用户重新选择
   
-  // 加载对应类型的客户有效性标签选项
-  await loadCustomerValidOptions(newIntention);
+  // 从已加载的所有选项中筛选对应类型
+  filterCustomerValidOptions(newIntention);
   validModalVisible.value = true;
 };
 
@@ -812,6 +812,21 @@ const handleValidCancel = () => {
   validUpdateForm.validId = undefined;
 };
 
+const filterCustomerValidOptions = (type?: number) => {
+  if (!allCustomerValidOptionsMap.value.size) {
+    customerValidOptions.value = [];
+    return;
+  }
+  
+  // 从已加载的所有选项中筛选对应类型
+  const allOptions = Array.from(allCustomerValidOptionsMap.value.values());
+  if (type === undefined) {
+    customerValidOptions.value = allOptions;
+  } else {
+    customerValidOptions.value = allOptions.filter(item => item.type === type);
+  }
+};
+
 const loadCustomerValidOptions = async (type?: number) => {
   if (validOptionsLoading.value) return;
   
@@ -835,11 +850,15 @@ const loadCustomerValidOptions = async (type?: number) => {
 
 const loadAllCustomerValidOptions = async () => {
   try {
-    const response = await getCustomerValidList({ pageSize: 1000 });
+    // 加载所有类型的客户有效性选项（不限制type）
+    const response = await getCustomerValidList({ 
+      status: 1,
+      pageSize: 1000 
+    });
     const allOptions = response.data.list || [];
     allCustomerValidOptionsMap.value = new Map(allOptions.map(item => [item.id, item]));
   } catch (error) {
-    console.error("鍔犺浇鍏ㄩ儴瀹㈡埛鏈夋晥閫夐」澶辫触:", error);
+    console.error("加载客户有效选项失败:", error);
   }
 };
 
