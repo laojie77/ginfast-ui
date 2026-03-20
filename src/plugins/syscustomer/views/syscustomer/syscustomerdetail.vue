@@ -40,9 +40,13 @@
             </a-dropdown>
 
             <a-dropdown @select="handleIntentionSelect">
-              <a-tooltip :content="getIntentionText(localCustomer?.intention)" position="top">
-                <a-tag size="small" :color="getIntentionColor(localCustomer?.intention)" class="dropdown-tag">
-                  {{ getIntentionText(localCustomer?.intention) }}
+              <a-tooltip :content="getIntentionDisplayText()" position="top">
+                <a-tag
+                  size="small"
+                  :color="getIntentionColor(localCustomer?.intention)"
+                  :class="['dropdown-tag', getIntentionDisplayText().length > 20 ? 'multiline' : '']"
+                >
+                  {{ getIntentionDisplayText() }}
                 </a-tag>
               </a-tooltip>
               <template #content>
@@ -77,7 +81,11 @@
 
             <a-dropdown @select="handleSinglePieceTypeSelect">
               <a-tooltip :content="getSinglePieceTypeDisplayText()" position="top">
-                <a-tag size="small" :color="getSinglePieceTypeColor(localCustomer?.singlePieceType)" class="dropdown-tag">
+                <a-tag
+                  size="small"
+                  :color="getSinglePieceTypeColor(localCustomer?.singlePieceType)"
+                  :class="['dropdown-tag', getSinglePieceTypeDisplayText().length > 20 ? 'multiline' : '']"
+                >
                   {{ getSinglePieceTypeDisplayText() }}
                 </a-tag>
               </a-tooltip>
@@ -214,6 +222,51 @@
           </div>
         </div>
       </div>
+      <a-modal
+        v-model:visible="statusModalVisible"
+        :title="getStatusModalTitle()"
+        :on-before-ok="handleStatusSave"
+        @cancel="handleStatusCancel"
+        :width="420"
+      >
+        <a-form :model="statusUpdateForm">
+          <a-form-item :label="TOP_FIELD_LABELS.status">
+            <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus)">
+              {{ getStatusText(statusUpdateForm.newStatus) }}
+            </a-tag>
+          </a-form-item>
+          <a-form-item label="备注">
+            <a-textarea v-model="statusUpdateForm.progressRemark" placeholder="请输入进度备注" :rows="4" />
+          </a-form-item>
+        </a-form>
+      </a-modal>
+
+      <a-modal
+        v-model:visible="validModalVisible"
+        :title="getValidModalTitle()"
+        :on-before-ok="handleValidSave"
+        @cancel="handleValidCancel"
+        :width="520"
+      >
+        <a-form :model="validUpdateForm">
+          <a-form-item
+            field="validId"
+            :label="getValidModalTitle()"
+            :rules="[{ required: true, message: `请选择${getValidModalTitle()}` }]"
+          >
+            <a-select
+              v-model="validUpdateForm.validId"
+              :placeholder="`请选择${getValidModalTitle()}`"
+              allow-clear
+              :loading="validOptionsLoading"
+            >
+              <a-option v-for="item in customerValidOptions" :key="item.id" :value="item.id">
+                {{ item.name }}
+              </a-option>
+            </a-select>
+          </a-form-item>
+        </a-form>
+      </a-modal>
     </a-drawer>
   </div>
 </template>
@@ -222,6 +275,7 @@
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { IconPlus } from "@arco-design/web-vue/es/icon";
+import { getCustomerValidList, type CustomerValidData } from "@/api/customervalid";
 import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import { getSysCustomer, updateSysCustomer, type SysCustomerData } from "../../api/syscustomer";
@@ -329,6 +383,29 @@ const newRecord = ref("");
 const addingRecord = ref(false);
 const messagesContainer = ref<HTMLElement>();
 const extraForm = reactive<Record<string, string>>({});
+const statusModalVisible = ref(false);
+const validModalVisible = ref(false);
+const validOptionsLoading = ref(false);
+const customerValidOptions = ref<CustomerValidData[]>([]);
+const allCustomerValidOptionsMap = ref<Map<number, CustomerValidData>>(new Map());
+const statusUpdateForm = reactive<{
+  currentStatus?: number;
+  newStatus?: number;
+  progressRemark: string;
+}>({
+  currentStatus: undefined,
+  newStatus: undefined,
+  progressRemark: ""
+});
+const validUpdateForm = reactive<{
+  currentIntention?: number;
+  newIntention?: number;
+  validId?: number;
+}>({
+  currentIntention: undefined,
+  newIntention: undefined,
+  validId: undefined
+});
 
 const parseExtra = (extra: CustomerDetailData["extra"]) => {
   if (!extra) return {};
@@ -415,17 +492,63 @@ const getSinglePieceTypeColor = (type?: number) => {
   return type === undefined || type === null ? "" : "arcoblue";
 };
 
+const getProgressRemark = () => {
+  const extraObj = parseExtra(localCustomer.value?.extra);
+  let progressRemark = String(extraObj.progress_remark || "").trim();
+  
+  // 移除可能的多余连字符（与列表视图保持一致）
+  progressRemark = progressRemark.replace(/\s*-\s*$/, "");
+  
+  return progressRemark;
+};
+
+const getIntentionValidId = () => {
+  const extraObj = parseExtra(localCustomer.value?.extra);
+  const validId = Number(extraObj.intention_valid_id);
+  return Number.isFinite(validId) && validId > 0 ? validId : undefined;
+};
+
 const getStatusDisplayText = () => {
   const statusName = getStatusText(localCustomer.value?.status);
-  const extraObj = parseExtra(localCustomer.value?.extra);
-  const progressRemark = String(extraObj.progress_remark || "").trim();
+  const progressRemark = getProgressRemark();
   return progressRemark ? `${statusName} - ${progressRemark}` : statusName;
 };
 
+const getIntentionDisplayText = () => {
+  const intentionName = getIntentionText(localCustomer.value?.intention);
+  if (Number(localCustomer.value?.intention) === 0) {
+    return intentionName;
+  }
+
+  const validId = getIntentionValidId();
+  const validName = validId ? allCustomerValidOptionsMap.value.get(validId)?.name || "" : "";
+  return validName ? `${intentionName} - ${validName}` : intentionName;
+};
+
 const getSinglePieceTypeDisplayText = () => {
-  return localCustomer.value?.singlePieceType === undefined || localCustomer.value?.singlePieceType === null
-    ? "NULL"
-    : getSinglePieceTypeText(localCustomer.value?.singlePieceType);
+  if (localCustomer.value?.singlePieceType === undefined || localCustomer.value?.singlePieceType === null) {
+    return "贷款类型：未设置";
+  }
+
+  const typeName = getSinglePieceTypeText(localCustomer.value?.singlePieceType);
+  return `贷款类型：${typeName === "-" ? "未知" : typeName}`;
+};
+
+const getStatusModalTitle = () => {
+  return statusUpdateForm.currentStatus === statusUpdateForm.newStatus ? "添加/修改进度备注" : "更新业务阶段";
+};
+
+const getValidModalTitle = () => {
+  switch (validUpdateForm.newIntention) {
+    case 1:
+      return "有效说明";
+    case 2:
+      return "无效说明";
+    case 3:
+      return "黑名单";
+    default:
+      return "客户有效";
+  }
 };
 
 const getExtraPropertyOptions = (property: string) => {
@@ -493,11 +616,39 @@ const handleTopFieldChange = async (field: keyof CustomerDetailData, value: unkn
 };
 
 const handleStatusSelect = async (value: string | number) => {
-  await handleTopFieldChange("status", value);
+  const newStatus = Number(value);
+  const currentStatus = Number(localCustomer.value?.status);
+  
+  if (newStatus === currentStatus) {
+    // 相同状态，打开备注弹窗
+    statusUpdateForm.currentStatus = currentStatus;
+    statusUpdateForm.newStatus = newStatus;
+    statusUpdateForm.progressRemark = getProgressRemark();
+    statusModalVisible.value = true;
+  } else {
+    // 不同状态，打开状态变更弹窗
+    statusUpdateForm.currentStatus = currentStatus;
+    statusUpdateForm.newStatus = newStatus;
+    statusUpdateForm.progressRemark = "";
+    statusModalVisible.value = true;
+  }
 };
 
 const handleIntentionSelect = async (value: string | number) => {
-  await handleTopFieldChange("intention", value);
+  const newIntention = Number(value);
+  const currentIntention = Number(localCustomer.value?.intention);
+  
+  if (newIntention === currentIntention) {
+    // 相同状态，打开有效说明弹窗
+    validUpdateForm.currentIntention = currentIntention;
+    validUpdateForm.newIntention = newIntention;
+    validUpdateForm.validId = getIntentionValidId();
+    await loadCustomerValidOptions();
+    validModalVisible.value = true;
+  } else {
+    // 不同状态，直接更新
+    await handleTopFieldChange("intention", value);
+  }
 };
 
 const handleStarSelect = async (value: string | number) => {
@@ -578,6 +729,103 @@ const handleAddRecord = async () => {
     Message.error("添加跟进记录失败");
   } finally {
     addingRecord.value = false;
+  }
+};
+
+const handleStatusSave = async () => {
+  if (!localCustomer.value?.id) {
+    Message.error("客户信息不存在");
+    return false;
+  }
+
+  try {
+    // 更新状态
+    if (statusUpdateForm.newStatus !== undefined) {
+      await handleTopFieldChange("status", statusUpdateForm.newStatus);
+    }
+
+    // 更新进度备注
+    const extraObj = parseExtra(localCustomer.value.extra);
+    if (statusUpdateForm.progressRemark.trim()) {
+      extraObj.progress_remark = statusUpdateForm.progressRemark.trim();
+    } else {
+      delete extraObj.progress_remark;
+    }
+
+    await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "progress_remark", "已更新进度备注");
+    
+    statusModalVisible.value = false;
+    return true;
+  } catch (error) {
+    console.error("保存业务阶段失败:", error);
+    Message.error("保存业务阶段失败");
+    return false;
+  }
+};
+
+const handleValidSave = async () => {
+  if (!localCustomer.value?.id) {
+    Message.error("客户信息不存在");
+    return false;
+  }
+
+  if (!validUpdateForm.validId) {
+    Message.error("请选择有效说明");
+    return false;
+  }
+
+  try {
+    // 更新客户有效性
+    if (validUpdateForm.newIntention !== undefined) {
+      await handleTopFieldChange("intention", validUpdateForm.newIntention);
+    }
+
+    // 更新有效说明ID
+    const extraObj = parseExtra(localCustomer.value.extra);
+    extraObj.intention_valid_id = validUpdateForm.validId;
+
+    await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "intention_valid_id", "已更新有效说明");
+    
+    validModalVisible.value = false;
+    return true;
+  } catch (error) {
+    console.error("保存客户有效失败:", error);
+    Message.error("保存客户有效失败");
+    return false;
+  }
+};
+
+const handleStatusCancel = () => {
+  statusModalVisible.value = false;
+  statusUpdateForm.currentStatus = undefined;
+  statusUpdateForm.newStatus = undefined;
+  statusUpdateForm.progressRemark = "";
+};
+
+const handleValidCancel = () => {
+  validModalVisible.value = false;
+  validUpdateForm.currentIntention = undefined;
+  validUpdateForm.newIntention = undefined;
+  validUpdateForm.validId = undefined;
+};
+
+const loadCustomerValidOptions = async () => {
+  if (validOptionsLoading.value) return;
+  
+  validOptionsLoading.value = true;
+  try {
+    const response = await getCustomerValidList();
+    customerValidOptions.value = response.data.list || [];
+    
+    // 创建映射以便快速查找
+    allCustomerValidOptionsMap.value = new Map(
+      customerValidOptions.value.map(item => [item.id, item])
+    );
+  } catch (error) {
+    console.error("加载客户有效选项失败:", error);
+    Message.error("加载客户有效选项失败");
+  } finally {
+    validOptionsLoading.value = false;
   }
 };
 
