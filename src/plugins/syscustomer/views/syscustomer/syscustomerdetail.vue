@@ -164,7 +164,21 @@
             <div class="remarks-grid">
               <div class="remark-block">
                 <div class="remark-title">客户备注</div>
-                <div class="remark-content">{{ localCustomer?.remarks || "暂无备注" }}</div>
+                <div class="remark-content">
+                  <template v-if="localCustomer?.remarks">
+                    <div 
+                      v-for="(remark, index) in formatRemarks(localCustomer.remarks)" 
+                      :key="index" 
+                      class="remark-item"
+                    >
+                      <div class="remark-header">
+                        <span class="remark-time">{{ remark.time }} - {{ remark.name }}</span>
+                      </div>
+                      <div class="remark-text">{{ remark.text }}</div>
+                    </div>
+                  </template>
+                  <div v-else class="remark-empty">暂无备注</div>
+                </div>
               </div>
             </div>
           </div>
@@ -507,6 +521,41 @@ const validUpdateForm = reactive<{
   newIntention: undefined,
   validId: undefined
 });
+
+// 格式化备注内容，按逗号分割并解析时间戳和内容
+const formatRemarks = (remarks: string) => {
+  if (!remarks || !remarks.trim()) return [];
+  
+  // 按逗号分割，过滤空字符串
+  const remarkItems = remarks.split(',').filter(item => item.trim());
+  
+  return remarkItems.map(item => {
+    const trimmedItem = item.trim();
+    
+    // 尝试解析格式：时间戳 - 姓名：内容
+    const timeSeparatorIndex = trimmedItem.indexOf(' - ');
+    const nameSeparatorIndex = trimmedItem.indexOf('：');
+    
+    if (timeSeparatorIndex !== -1 && nameSeparatorIndex !== -1 && nameSeparatorIndex > timeSeparatorIndex) {
+      const time = trimmedItem.substring(0, timeSeparatorIndex).trim();
+      const name = trimmedItem.substring(timeSeparatorIndex + 3, nameSeparatorIndex).trim();
+      const text = trimmedItem.substring(nameSeparatorIndex + 1).trim();
+      
+      return {
+        time: time,
+        name: name,
+        text: text
+      };
+    } else {
+      // 如果格式不匹配，直接显示整个内容
+      return {
+        time: '',
+        name: '',
+        text: trimmedItem
+      };
+    }
+  });
+};
 
 const parseExtra = (extra: CustomerDetailData["extra"]) => {
   if (!extra) return {};
@@ -1349,31 +1398,76 @@ watch(
 }
 
 .remarks-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
   margin-bottom: 14px;
 }
 
 .remark-block {
-  padding: 12px;
-  background: #f7f8fa;
-  border-radius: 6px;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 1px solid #e8ecef;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .remark-title {
-  color: #4e5969;
-  font-size: 13px;
+  color: #1d2129;
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8ecef;
 }
 
 .remark-content {
   color: #1d2129;
   font-size: 14px;
-  line-height: 1.7;
-  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.remark-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.remark-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.remark-item:first-child {
+  padding-top: 0;
+}
+
+.remark-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.remark-time {
+  color: #86909c;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f2f3f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.remark-text {
+  color: #4e5969;
+  font-size: 13px;
+  line-height: 1.5;
   word-break: break-word;
+}
+
+.remark-empty {
+  color: #86909c;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .chat-messages {
