@@ -638,17 +638,20 @@ const handleIntentionSelect = async (value: string | number) => {
   const newIntention = Number(value);
   const currentIntention = Number(localCustomer.value?.intention);
   
-  if (newIntention === currentIntention) {
-    // 相同状态，打开有效说明弹窗
-    validUpdateForm.currentIntention = currentIntention;
-    validUpdateForm.newIntention = newIntention;
-    validUpdateForm.validId = getIntentionValidId();
-    await loadCustomerValidOptions();
-    validModalVisible.value = true;
-  } else {
-    // 不同状态，直接更新
+  if (newIntention === 0) {
+    // intention=0 待确认，不弹窗，直接更新
     await handleTopFieldChange("intention", value);
+    return;
   }
+  
+  // 设置表单数据
+  validUpdateForm.currentIntention = currentIntention;
+  validUpdateForm.newIntention = newIntention;
+  validUpdateForm.validId = getIntentionValidId();
+  
+  // 加载对应类型的客户有效性标签选项
+  await loadCustomerValidOptions(newIntention);
+  validModalVisible.value = true;
 };
 
 const handleStarSelect = async (value: string | number) => {
@@ -809,23 +812,34 @@ const handleValidCancel = () => {
   validUpdateForm.validId = undefined;
 };
 
-const loadCustomerValidOptions = async () => {
+const loadCustomerValidOptions = async (type?: number) => {
   if (validOptionsLoading.value) return;
   
   validOptionsLoading.value = true;
   try {
-    const response = await getCustomerValidList();
+    const response = await getCustomerValidList({
+      ...(type ? { type } : {}),
+      status: 1,
+      pageSize: 1000
+    });
     customerValidOptions.value = response.data.list || [];
     
     // 创建映射以便快速查找
-    allCustomerValidOptionsMap.value = new Map(
-      customerValidOptions.value.map(item => [item.id, item])
-    );
   } catch (error) {
     console.error("加载客户有效选项失败:", error);
     Message.error("加载客户有效选项失败");
   } finally {
     validOptionsLoading.value = false;
+  }
+};
+
+const loadAllCustomerValidOptions = async () => {
+  try {
+    const response = await getCustomerValidList({ pageSize: 1000 });
+    const allOptions = response.data.list || [];
+    allCustomerValidOptionsMap.value = new Map(allOptions.map(item => [item.id, item]));
+  } catch (error) {
+    console.error("鍔犺浇鍏ㄩ儴瀹㈡埛鏈夋晥閫夐」澶辫触:", error);
   }
 };
 
@@ -867,6 +881,7 @@ watch(
       if (props.customerId) {
         await loadFollowRecords();
       }
+      await loadAllCustomerValidOptions();
       scrollMessagesToBottom();
     }
   }
