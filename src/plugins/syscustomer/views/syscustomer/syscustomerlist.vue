@@ -190,13 +190,12 @@
               </template>
             </a-table-column>
             <a-table-column title="客户编号" data-index="num" :width="200" ellipsis tooltip />
-            <a-table-column title="姓名" data-index="name" :width="100" ellipsis tooltip />
-            <a-table-column title="手机号" data-index="mobile" :width="150" ellipsis tooltip />
-            <a-table-column title="渠道来源" data-index="channelId" :width="150" ellipsis tooltip>
+            <a-table-column title="姓名" data-index="name" :width="120" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ channelOption.find(item => item.value === record.channelId)?.name || "" }}
+                {{ record.name || '未命名客户' }}
               </template>
             </a-table-column>
+            <a-table-column title="手机号" data-index="mobile" :width="150" ellipsis tooltip />
             <a-table-column title="业务阶段" data-index="status" :width="200">
               <template #cell="{ record }">
                 <a-dropdown @select="value => handleStatusChange(record, value)">
@@ -272,6 +271,11 @@
                     </a-doption>
                   </template>
                 </a-dropdown>
+              </template>
+            </a-table-column>
+            <a-table-column title="渠道来源" data-index="channelId" :width="150" ellipsis tooltip>
+              <template #cell="{ record }">
+                {{ channelOption.find(item => item.value === record.channelId)?.name || "" }}
               </template>
             </a-table-column>
             <a-table-column title="跟进人" data-index="userName" :width="100" ellipsis tooltip>
