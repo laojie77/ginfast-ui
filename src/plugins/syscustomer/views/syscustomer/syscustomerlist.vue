@@ -284,7 +284,20 @@
               </template>
             </a-table-column>
             <a-table-column title="金额" data-index="moneyDemand" :width="80" ellipsis tooltip />
-            <a-table-column title="客户备注" data-index="remarks" :width="200" ellipsis tooltip />
+            <a-table-column title="客户备注" data-index="remarks" :width="200">
+              <template #cell="{ record }">
+                <a-popover position="right">
+                  <template #content>
+                    <div class="remark-popover-content">
+                      {{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}
+                    </div>
+                  </template>
+                  <div class="table-remark-text">
+                    {{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}
+                  </div>
+                </a-popover>
+              </template>
+            </a-table-column>
             <a-table-column title="分配时间" data-index="allotTime" :width="200" ellipsis tooltip>
               <template #cell="{ record }">
                 {{ record["allotTime"] ? formatTime(record["allotTime"]) : "" }}
@@ -587,6 +600,7 @@ import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../.
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid } from "@/api/customervalid";
 import type { CustomerValidData, CustomerValidCreateParams, CustomerValidUpdateParams } from "@/api/customervalid";
 import SysCustomerDetail from "./syscustomerdetail.vue";
+import { formatCustomerRemarkDisplay } from "./remark";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
@@ -1791,5 +1805,20 @@ onMounted(async () => {
     -webkit-box-orient: vertical;
     white-space: normal;
   }
+}
+
+.table-remark-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.remark-popover-content {
+  width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

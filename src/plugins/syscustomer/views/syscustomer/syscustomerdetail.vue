@@ -4,7 +4,7 @@
       v-model:visible="visible"
       title="客户详情"
       placement="right"
-      :width="1260"
+      width="80%"
       :footer="false"
       body-class="customer-detail-body"
       @cancel="handleClose"
@@ -168,17 +168,8 @@
               <div class="remark-block">
                 <div class="remark-title">客户备注</div>
                 <div class="remark-content">
-                  <template v-if="localCustomer?.remarks">
-                    <div 
-                      v-for="(remark, index) in formatRemarks(localCustomer.remarks)" 
-                      :key="index" 
-                      class="remark-item"
-                    >
-                      <div class="remark-header">
-                        <span class="remark-time">{{ remark.time }} - {{ remark.name }}</span>
-                      </div>
-                      <div class="remark-text">{{ remark.text }}</div>
-                    </div>
+                  <template v-if="formatRemarkDisplay(localCustomer?.remarks)">
+                    <div class="remark-text">{{ formatRemarkDisplay(localCustomer?.remarks) }}</div>
                   </template>
                   <div v-else class="remark-empty">暂无备注</div>
                 </div>
@@ -393,6 +384,7 @@ import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import { getSysCustomer, updateSysCustomer, type SysCustomerData } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
+import { formatRemarkDisplay } from "./remark";
 
 import {
   createSysCustomerTraces,
@@ -538,41 +530,6 @@ const validUpdateForm = reactive<{
   newIntention: undefined,
   validId: undefined
 });
-
-// 格式化备注内容，按逗号分割并解析时间戳和内容
-const formatRemarks = (remarks: string) => {
-  if (!remarks || !remarks.trim()) return [];
-  
-  // 按逗号分割，过滤空字符串
-  const remarkItems = remarks.split(',').filter(item => item.trim());
-  
-  return remarkItems.map(item => {
-    const trimmedItem = item.trim();
-    
-    // 尝试解析格式：时间戳 - 姓名：内容
-    const timeSeparatorIndex = trimmedItem.indexOf(' - ');
-    const nameSeparatorIndex = trimmedItem.indexOf('：');
-    
-    if (timeSeparatorIndex !== -1 && nameSeparatorIndex !== -1 && nameSeparatorIndex > timeSeparatorIndex) {
-      const time = trimmedItem.substring(0, timeSeparatorIndex).trim();
-      const name = trimmedItem.substring(timeSeparatorIndex + 3, nameSeparatorIndex).trim();
-      const text = trimmedItem.substring(nameSeparatorIndex + 1).trim();
-      
-      return {
-        time: time,
-        name: name,
-        text: text
-      };
-    } else {
-      // 如果格式不匹配，直接显示整个内容
-      return {
-        time: '',
-        name: '',
-        text: trimmedItem
-      };
-    }
-  });
-};
 
 const parseExtra = (extra: CustomerDetailData["extra"]) => {
   if (!extra) return {};
@@ -1473,6 +1430,7 @@ watch(
   color: #4e5969;
   font-size: 12px;
   line-height: 1.4;
+  white-space: pre-line;
   word-break: break-word;
 }
 
@@ -1514,7 +1472,7 @@ watch(
 .message-right {
   flex: 1;
   min-width: 0;
-  padding: 12px;
+  padding: 5px 10px;
   background: #fff;
   border: 1px solid #e5e6eb;
   border-radius: 6px;
@@ -1525,7 +1483,6 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
 .message-user {

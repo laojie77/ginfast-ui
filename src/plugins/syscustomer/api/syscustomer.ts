@@ -4,6 +4,19 @@ import { baseUrlApi } from "@/api/utils";
 import { BaseResult } from "@/api/types";
 
 
+export interface SysCustomerTraceData {
+    id?: number | string;
+    customerId?: number;
+    userId?: number;
+    tenantId?: number;
+    data?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    userName?: string;
+    avatar?: string;
+}
+
 export interface SysCustomerData {
     id: number; // 主键ID
     num: string; // 客户编号
@@ -58,6 +71,7 @@ export interface SysCustomerData {
     createdAt: string; // CreatedAt
     updatedAt: string; // UpdatedAt
     deletedAt: string; // DeletedAt
+    customerTracesList?: SysCustomerTraceData[]; // 客户跟进列表
 }
 
 export type SysCustomerListResult = BaseResult<{
