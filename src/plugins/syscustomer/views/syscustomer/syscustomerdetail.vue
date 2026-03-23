@@ -4,7 +4,7 @@
       v-model:visible="visible"
       title="客户详情"
       placement="right"
-      width="80%"
+      width="min(1180px, 92vw)"
       :footer="false"
       body-class="customer-detail-body"
       @cancel="handleClose"
@@ -118,7 +118,7 @@
                   <div class="customer-phone">{{ localCustomer?.mobile || "-" }}</div>
                   <div class="customer-mini-tags">
                     <a-tooltip :content="localCustomer?.isLock === 1 ? '点击解锁客户' : '点击锁定客户'" position="top">
-                      <a-tag 
+                      <a-tag
                         :color="localCustomer?.isLock === 1 ? 'red' : 'blue'"
                         size="small"
                         @click="handleToggleLock"
@@ -164,7 +164,7 @@
                 </div>
               </div>
             </div>
-            <div class="remarks-grid">
+            <div class="remarks-grid" v-if="formatRemarkDisplay(localCustomer?.remarks)">
               <div class="remark-block">
                 <div class="remark-title">客户备注</div>
                 <div class="remark-content">
@@ -197,9 +197,9 @@
                     跟进记录
                     <span class="panel-title-note">
                       <a-tag
-                          color="green"
-                          size="small"
-                          style="cursor: pointer;"
+                        color="green"
+                        size="small"
+                        style="cursor: pointer;"
                       >
                         分配时间：{{ formatDisplayTime(localCustomer?.allotTime) }}
                       </a-tag>
@@ -207,11 +207,33 @@
                   </div>
                   <div class="chat-subtitle">最新记录显示在最下面，向上滚动查看历史记录</div>
                 </div>
-                <a-badge :count="followRecords.length" />
+                <div class="chat-header-side">
+                  <a-popover v-if="followRecords.length" position="left">
+                    <template #content>
+                      <div class="follow-record-popover-content">
+                        <div v-for="record in followRecords" :key="record.id" class="remark-item">
+                          <div class="remark-header">
+                            <span class="remark-time">{{ formatDisplayTime(record.createdAt) }}</span>
+                            <a-tag size="small" color="arcoblue">{{ record.userName || "未知用户" }}</a-tag>
+                          </div>
+                          <div class="remark-text">{{ record.data || "-" }}</div>
+                        </div>
+                      </div>
+                    </template>
+                    <div class="chat-metric chat-metric--interactive">
+                      <span class="chat-metric-label">跟进</span>
+                      <strong class="chat-metric-value">{{ followRecords.length }}</strong>
+                    </div>
+                  </a-popover>
+                  <div v-else class="chat-metric">
+                    <span class="chat-metric-label">跟进</span>
+                    <strong class="chat-metric-value">0</strong>
+                  </div>
+                </div>
               </div>
-              <div ref="messagesContainer" class="chat-messages">
+              <div ref="messagesContainer" :class="['chat-messages', { 'chat-messages--empty': !followRecords.length }]">
 
-                <template v-if="followRecords.length">
+                <div v-if="followRecords.length" class="chat-message-list">
                   <div v-for="record in followRecords" :key="record.id" class="message-item">
                     <div class="message-left">
                       <a-avatar :size="36" class="record-avatar" :image-url="handleUrl(record.avatar)">
@@ -226,16 +248,24 @@
                       <div class="message-text">{{ record.data || "-" }}</div>
                     </div>
                   </div>
-                </template>
+                </div>
 
                 <div v-else class="empty-records">
-                  <a-empty description="暂无聊天记录" />
+                  <a-empty description="暂无跟进记录" />
                 </div>
               </div>
 
               <div class="chat-editor">
-                <a-textarea v-model="newRecord" placeholder="请输入跟进内容..." :rows="4" :max-length="500" show-word-limit />
+                <a-textarea
+                  v-model="newRecord"
+                  placeholder="请输入跟进内容..."
+                  :auto-size="{ minRows: 3, maxRows: 5 }"
+                  :max-length="500"
+                  show-word-limit
+                  @keydown="handleRecordKeydown"
+                />
                 <div class="chat-actions">
+                  <span class="chat-actions-tip">Enter 发送，Shift + Enter 换行</span>
                   <a-button type="primary" :loading="addingRecord" @click="handleAddRecord">
                     <template #icon>
                       <icon-plus />
@@ -281,7 +311,7 @@
             @click="handleManageValid"
             style="color: #165dff"
             v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-            >管理</a-button
+          >管理</a-button
           >
         </div>
         <a-form :model="validUpdateForm" ref="validFormRef">
@@ -394,11 +424,11 @@ import {
 const fromOption = ref(dictFilter("from"));
 type CustomerDetailData = Partial<SysCustomerData> &
   Record<string, any> & {
-    id?: number;
-    channelId?: number;
-    userId?: number;
-    extra?: string | Record<string, any>;
-  };
+  id?: number;
+  channelId?: number;
+  userId?: number;
+  extra?: string | Record<string, any>;
+};
 
 interface SelectOption {
   value: number;
@@ -619,10 +649,10 @@ const getSinglePieceTypeColor = (type?: number) => {
 const getProgressRemark = () => {
   const extraObj = parseExtra(localCustomer.value?.extra);
   let progressRemark = String(extraObj.progress_remark || "").trim();
-  
+
   // 移除可能的多余连字符（与列表视图保持一致）
   progressRemark = progressRemark.replace(/\s*-\s*$/, "");
-  
+
   return progressRemark;
 };
 
@@ -699,6 +729,18 @@ const scrollMessagesToBottom = () => {
   });
 };
 
+const handleRecordKeydown = (event: KeyboardEvent) => {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (!addingRecord.value) {
+    handleAddRecord();
+  }
+};
+
 const refreshCustomerDetail = async () => {
   if (!localCustomer.value?.id) return;
 
@@ -742,7 +784,7 @@ const handleTopFieldChange = async (field: keyof CustomerDetailData, value: unkn
 const handleStatusSelect = async (value: string | number) => {
   const newStatus = Number(value);
   const currentStatus = Number(localCustomer.value?.status);
-  
+
   if (newStatus === currentStatus) {
     // 相同状态，打开备注弹窗
     statusUpdateForm.currentStatus = currentStatus;
@@ -761,18 +803,18 @@ const handleStatusSelect = async (value: string | number) => {
 const handleIntentionSelect = async (value: string | number) => {
   const newIntention = Number(value);
   const currentIntention = Number(localCustomer.value?.intention);
-  
+
   if (newIntention === 0) {
     // intention=0 待确认，不弹窗，直接更新
     await handleTopFieldChange("intention", value);
     return;
   }
-  
+
   // 设置表单数据（不缓存上次选择，直接重置）
   validUpdateForm.currentIntention = currentIntention;
   validUpdateForm.newIntention = newIntention;
   validUpdateForm.validId = undefined; // 重置选择，让用户重新选择
-  
+
   // 从已加载的所有选项中筛选对应类型
   filterCustomerValidOptions(newIntention);
   validModalVisible.value = true;
@@ -880,7 +922,7 @@ const handleStatusSave = async () => {
     }
 
     await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "progress_remark", "已更新进度备注");
-    
+
     statusModalVisible.value = false;
     return true;
   } catch (error) {
@@ -912,7 +954,7 @@ const handleValidSave = async () => {
     extraObj.intention_valid_id = validUpdateForm.validId;
 
     await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "intention_valid_id", "已更新有效说明");
-    
+
     validModalVisible.value = false;
     return true;
   } catch (error) {
@@ -1003,12 +1045,12 @@ const handleSaveValid = async () => {
     if (!form) {
       return false;
     }
-    
+
     const errors = await form.validate();
     if (errors) {
       return false;
     }
-    
+
     if (editingValid.id) {
       // 编辑
       await updateCustomerValid(editingValid.id, editingValid);
@@ -1018,7 +1060,7 @@ const handleSaveValid = async () => {
       await createCustomerValid(editingValid);
       Message.success("新增成功");
     }
-    
+
     // 重新加载列表
     await loadCustomerValidListByType(validUpdateForm.newIntention);
     // 重新加载所有标签映射
@@ -1027,7 +1069,7 @@ const handleSaveValid = async () => {
     if (validModalVisible.value && validUpdateForm.newIntention) {
       filterCustomerValidOptions(validUpdateForm.newIntention);
     }
-    
+
     editValidModalVisible.value = false;
     return true;
   } catch (error) {
@@ -1057,19 +1099,19 @@ const handleToggleLock = async () => {
 
   try {
     const newLockStatus = localCustomer.value.isLock === 1 ? 0 : 1;
-    
+
     // 更新本地数据
     localCustomer.value.isLock = newLockStatus;
-    
+
     // 调用API更新数据 - 传递完整的对象而不是单独的参数
     await updateSysCustomer({ ...localCustomer.value, isLock: newLockStatus });
-    
+
     if (newLockStatus === 1) {
       Message.success(`已锁定客户：${localCustomer.value.name}`);
     } else {
       Message.success(`已解锁客户：${localCustomer.value.name}`);
     }
-    
+
     // 通知父组件数据已更新
     emit("updated", localCustomer.value);
   } catch (error) {
@@ -1083,7 +1125,7 @@ const filterCustomerValidOptions = (type?: number) => {
     customerValidOptions.value = [];
     return;
   }
-  
+
   // 从已加载的所有选项中筛选对应类型
   const allOptions = Array.from(allCustomerValidOptionsMap.value.values());
   if (type === undefined) {
@@ -1096,9 +1138,9 @@ const filterCustomerValidOptions = (type?: number) => {
 const loadAllCustomerValidOptions = async () => {
   try {
     // 加载所有类型的客户有效性选项（不限制type）
-    const response = await getCustomerValidList({ 
+    const response = await getCustomerValidList({
       status: 1,
-      pageSize: 1000 
+      pageSize: 1000
     });
     const allOptions = response.data.list || [];
     allCustomerValidOptionsMap.value = new Map(allOptions.map(item => [item.id, item]));
@@ -1153,12 +1195,17 @@ watch(
 </script>
 
 <style scoped lang="scss">
+:deep(.customer-detail-body) {
+  padding: 16px;
+  overflow-y: auto;
+}
+
 .detail-shell {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: calc(100vh - 118px);
-  background: #f7f8fa;
+  min-height: calc(100vh - 75px);
+  background: linear-gradient(180deg, #f7f8fa 0%, #f2f6ff 100%);
 }
 
 .serial-strip {
@@ -1206,8 +1253,10 @@ watch(
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(300px, 340px) minmax(0, 760px);
+  align-items: start;
+  justify-content: center;
+  gap: 16px;
 }
 
 .left-pane,
@@ -1221,11 +1270,20 @@ watch(
   gap: 12px;
 }
 
+.right-pane {
+  width: 100%;
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  height: calc(100vh - 190px);
+}
+
 .panel-card {
   background: #fff;
   border: 1px solid #e5e6eb;
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 16px;
+  box-shadow: 0 10px 30px rgba(15, 35, 95, 0.04);
 }
 
 .panel-title {
@@ -1351,6 +1409,8 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 18px;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -1358,7 +1418,11 @@ watch(
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #f7faff 0%, #eef4ff 100%);
+  border: 1px solid #dbe4ff;
+  border-radius: 16px;
 }
 
 .chat-title-wrap {
@@ -1368,6 +1432,71 @@ watch(
 .chat-subtitle {
   color: #86909c;
   font-size: 12px;
+  line-height: 1.6;
+}
+
+.chat-header-side {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chat-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 247, 255, 0.96) 100%);
+  border: 1px solid rgba(22, 93, 255, 0.12);
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.06);
+}
+
+.chat-metric--interactive {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.chat-metric--interactive:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(236, 243, 255, 1) 100%);
+  border-color: rgba(22, 93, 255, 0.24);
+  box-shadow: 0 6px 14px rgba(22, 93, 255, 0.1);
+}
+
+.chat-metric-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  color: #4e5969;
+  font-size: 12px;
+  line-height: 1;
+  background: rgba(22, 93, 255, 0.08);
+  border-radius: 999px;
+}
+
+.chat-metric-value {
+  min-width: 20px;
+  color: #165dff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.chat-metric-tip {
+  display: block;
+  margin-top: 6px;
+  color: #86909c;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.follow-record-popover-content {
+  width: 300px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .remarks-grid {
@@ -1386,8 +1515,8 @@ watch(
   color: #1d2129;
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
   border-bottom: 1px solid #e8ecef;
 }
 
@@ -1444,38 +1573,82 @@ watch(
 
 .chat-messages {
   flex: 1;
-  min-height: 560px;
-  max-height: 560px;
+  min-height: 0;
   overflow-y: auto;
-  padding: 12px;
-  background: #fafafa;
-  border: 1px solid #e5e6eb;
-  border-radius: 6px;
+  position: relative;
+  padding: 18px 18px 18px 16px;
+  background: linear-gradient(180deg, #fbfcff 0%, #f7f9fc 100%);
+  border: 1px solid #e5eaf3;
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.chat-message-list {
+  position: relative;
+}
+
+.chat-message-list::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 17px;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(22, 93, 255, 0.18) 0%, rgba(22, 93, 255, 0.06) 100%);
+}
+
+.chat-messages--empty::before {
+  display: none;
 }
 
 .message-item {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.message-item:last-child {
+  margin-bottom: 0;
 }
 
 .message-left {
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .record-avatar {
-  background: #14c9c9;
+  background: linear-gradient(135deg, #165dff 0%, #36cfc9 100%);
   color: #fff;
   font-weight: 700;
+  border: 3px solid #f7f9fc;
+  box-shadow: 0 10px 20px rgba(22, 93, 255, 0.16);
 }
 
 .message-right {
-  flex: 1;
+  position: relative;
+  width: min(100%, 680px);
   min-width: 0;
-  padding: 5px 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e5eaf3;
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06);
+}
+
+.message-right::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: -6px;
+  width: 12px;
+  height: 12px;
   background: #fff;
-  border: 1px solid #e5e6eb;
-  border-radius: 6px;
+  border-left: 1px solid #e5eaf3;
+  border-bottom: 1px solid #e5eaf3;
+  transform: rotate(45deg);
 }
 
 .message-top {
@@ -1483,6 +1656,9 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f3f8;
 }
 
 .message-user {
@@ -1500,7 +1676,7 @@ watch(
 .message-text {
   color: #1d2129;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.75;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -1513,9 +1689,12 @@ watch(
 }
 
 .chat-editor {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e6eb;
+  margin-top: 14px;
+  padding: 14px;
+  background: linear-gradient(180deg, #fbfcff 0%, #f7f8fa 100%);
+  border: 1px solid #e5eaf3;
+  border-radius: 16px;
+  flex-shrink: 0;
 }
 
 .chat-actions {
@@ -1581,9 +1760,17 @@ watch(
     grid-template-columns: 1fr;
   }
 
+  .right-pane {
+    position: static;
+    height: auto;
+  }
+
   .chat-messages {
-    min-height: 480px;
-    max-height: 480px;
+    min-height: 420px;
+  }
+
+  .message-right {
+    width: 100%;
   }
 }
 
@@ -1598,8 +1785,29 @@ watch(
   }
 
   .chat-messages {
-    min-height: 380px;
-    max-height: 380px;
+    min-height: 120px;
+    max-height: 400px;
+    padding: 14px 12px;
+  }
+
+  .chat-messages::before {
+    left: 27px;
+  }
+
+  .message-item {
+    gap: 10px;
+  }
+
+  .message-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .chat-panel,
+  .chat-header,
+  .chat-editor {
+    padding: 14px;
   }
 }
 </style>
