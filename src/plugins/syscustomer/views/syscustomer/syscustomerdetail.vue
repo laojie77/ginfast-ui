@@ -500,7 +500,6 @@ const messagesContainer = ref<HTMLElement>();
 const extraForm = reactive<Record<string, string>>({});
 const statusModalVisible = ref(false);
 const validModalVisible = ref(false);
-const validOptionsLoading = ref(false);
 const customerValidOptions = ref<CustomerValidData[]>([]);
 const allCustomerValidOptionsMap = ref<Map<number, CustomerValidData>>(new Map());
 
@@ -622,12 +621,12 @@ const getSinglePieceTypeText = (type?: number) => getTextByOptions(props.singleP
 const getChannelName = (channelId?: number) => getTextByOptions(props.channelOptions, channelId);
 const getFollowerName = (userId?: number) => getTextByOptions(props.followerOptions, userId);
 
-const getDepartmentName = (departmentId?: number) => {
-  if (!departmentId || !props.departmentTree.length) return "-";
+const getDepartmentName = (deptId?: number) => {
+  if (!deptId || !props.departmentTree.length) return "-";
 
   const findDepartmentName = (nodes: any[]): string => {
     for (const node of nodes) {
-      if (node.id === departmentId) {
+      if (node.id === deptId) {
         return node.name;
       }
       if (node.children?.length) {
@@ -730,7 +729,7 @@ const getExtraPropertyOptions = (property: string) => {
 const summaryItems = computed(() => [
   { label: "跟进人", value: getFollowerName(localCustomer.value?.userId) },
   { label: "渠道来源", value: getChannelName(localCustomer.value?.channelId) },
-  { label: "所属部门", value: getDepartmentName(localCustomer.value?.departmentId) },
+  { label: "所属部门", value: getDepartmentName(localCustomer.value?.deptId) },
   { label: "所在城市", value: localCustomer.value?.city || "-" },
   { label: "需求金额", value: formatAmount(localCustomer.value?.moneyDemand) },
   { label: "年龄", value: formatAmount(localCustomer.value?.age) }

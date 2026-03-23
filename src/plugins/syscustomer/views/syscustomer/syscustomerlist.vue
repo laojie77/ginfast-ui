@@ -93,10 +93,10 @@
             </a-col>
             <a-col :span="isMobile ? 12 : 6">
               <!-- 所属部门精确查询 -->
-              <a-form-item field="departmentId" label="所属部门">
+              <a-form-item field="deptId" label="所属部门">
                 <a-cascader
                   :options="cascaderOptions"
-                  v-model="searchForm.departmentId"
+                  v-model="searchForm.deptId"
                   placeholder="请选择部门"
                   check-strictly
                   allow-clear
@@ -290,9 +290,9 @@
                 {{ record["allotTime"] ? formatTime(record["allotTime"]) : "" }}
               </template>
             </a-table-column>
-            <a-table-column title="所属部门" data-index="departmentId" :width="100" ellipsis tooltip>
+            <a-table-column title="所属部门" data-index="deptId" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getDepartmentName(record.departmentId) }}
+                {{ getDepartmentName(record.deptId) }}
               </template>
             </a-table-column>
             <a-table-column title="所在城市" data-index="city" :width="100" ellipsis tooltip />
@@ -634,7 +634,7 @@ const CUSTOMER_EXTRA_OPTIONS = computed(() => sysConfigStore.customerExtraConfig
 // 数据权限判断函数
 const getDataPermissionInfo = () => {
   const userRoles = userInfo?.roles || [];
-  const userDepartmentId = userInfo?.department;
+  const userDeptId = userInfo?.department;
 
   // 检查是否有超级管理员权限 (dataScope=1)
   const hasSuperAdmin = userRoles.some(role => role.createdBy === 1 && role.dataScope === 1);
@@ -642,13 +642,13 @@ const getDataPermissionInfo = () => {
   if (hasSuperAdmin) {
     return {
       hasFullPermission: true,
-      allowedDepartmentIds: [], // 空数组表示全部权限
+      allowedDeptIds: [], // 空数组表示全部权限
       description: "超级管理员：查看全部部门和员工"
     };
   }
 
   // 合并所有角色的权限：收集所有允许的部门ID
-  const allowedDepartmentIds = new Set<number>();
+  const allowedDeptIds = new Set<number>();
 
   for (const role of userRoles) {
     const checkedDepts = role.checkedDepts ? role.checkedDepts.split(",").map(Number) : [];
@@ -657,28 +657,28 @@ const getDataPermissionInfo = () => {
       case 2: // 自定义权限
         if (checkedDepts.length === 0) {
           // checkedDepts为空，查看自身部门
-          if (userDepartmentId) {
-            allowedDepartmentIds.add(userDepartmentId);
+          if (userDeptId) {
+            allowedDeptIds.add(userDeptId);
           }
         } else {
           // checkedDepts不为空，查看指定部门
-          checkedDepts.forEach(deptId => allowedDepartmentIds.add(deptId));
+          checkedDepts.forEach(deptId => allowedDeptIds.add(deptId));
         }
         break;
       case 3: // 本部门数据
-        if (userDepartmentId) {
-          allowedDepartmentIds.add(userDepartmentId);
+        if (userDeptId) {
+          allowedDeptIds.add(userDeptId);
         }
         break;
       case 4: // 本部门及子部门
-        if (userDepartmentId) {
-          allowedDepartmentIds.add(userDepartmentId);
+        if (userDeptId) {
+          allowedDeptIds.add(userDeptId);
           // 递归添加所有子部门ID
           const addChildDepartments = (nodes: DivisionItem[]) => {
             for (const node of nodes) {
-              if (node.id === userDepartmentId && node.children) {
+              if (node.id === userDeptId && node.children) {
                 node.children.forEach(child => {
-                  allowedDepartmentIds.add(child.id);
+                  allowedDeptIds.add(child.id);
                   if (child.children) {
                     addChildDepartments(child.children);
                   }
@@ -698,8 +698,8 @@ const getDataPermissionInfo = () => {
 
   return {
     hasFullPermission: false,
-    allowedDepartmentIds: Array.from(allowedDepartmentIds),
-    description: `普通权限：查看${allowedDepartmentIds.size}个部门的员工`
+    allowedDeptIds: Array.from(allowedDeptIds),
+    description: `普通权限：查看${allowedDeptIds.size}个部门的员工`
   };
 };
 // userInfo.department 为当前自身部门
@@ -792,7 +792,7 @@ const cascaderOptions = computed(() => {
   }
 
   // 如果没有允许的部门ID，返回空数组
-  if (permissionInfo.allowedDepartmentIds.length === 0) {
+  if (permissionInfo.allowedDeptIds.length === 0) {
     return [];
   }
 
@@ -801,7 +801,7 @@ const cascaderOptions = computed(() => {
     const result: DivisionItem[] = [];
 
     for (const node of nodes) {
-      if (permissionInfo.allowedDepartmentIds.includes(node.id)) {
+      if (permissionInfo.allowedDeptIds.includes(node.id)) {
         const newNode = { ...node };
         if (node.children && node.children.length > 0) {
           newNode.children = filterByAllowedDepartments(node.children);
@@ -927,7 +927,7 @@ const searchForm = reactive({
   intention: undefined,
   singlePieceType: undefined,
   allotTime: "",
-  departmentId: undefined,
+  deptId: undefined,
   city: "",
   isReassign: undefined,
   isQuit: undefined,
@@ -938,9 +938,8 @@ const searchForm = reactive({
 
 // 监听部门选择变化，更新跟进人列表
 watch(
-  () => searchForm.departmentId,
+  () => searchForm.deptId,
   async newDeptId => {
-    console.log(newDeptId);
     if (newDeptId) {
       // 选择了具体部门：加载该部门的员工列表
       const deptId = Array.isArray(newDeptId) ? newDeptId[newDeptId.length - 1] : newDeptId;
@@ -954,7 +953,7 @@ watch(
         await getFollowerListByDepartment([]);
       } else {
         // 其他角色加载用户权限范围内的所有部门人员
-        await getFollowerListByDepartment(permissionInfo.allowedDepartmentIds);
+        await getFollowerListByDepartment(permissionInfo.allowedDeptIds);
       }
     }
   },
@@ -979,7 +978,7 @@ const editingData = reactive<Partial<SysCustomerData>>({
   singlePieceType: undefined,
   sex: undefined,
   allotTime: undefined,
-  departmentId: undefined,
+  deptId: undefined,
   remarks: undefined,
   age: undefined,
   city: undefined,
@@ -1062,8 +1061,8 @@ const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number
   if (searchForm.allotTime) {
     params.allotTime = searchForm.allotTime;
   }
-  if (searchForm.departmentId) {
-    params.departmentId = searchForm.departmentId;
+  if (searchForm.deptId) {
+    params.deptId = searchForm.deptId;
   }
   if (searchForm.city) {
     params.city = searchForm.city;
@@ -1114,7 +1113,7 @@ const handleReset = () => {
   searchForm.intention = undefined;
   searchForm.singlePieceType = undefined;
   searchForm.allotTime = "";
-  searchForm.departmentId = undefined;
+  searchForm.deptId = undefined;
   searchForm.city = "";
   searchForm.isReassign = undefined;
   searchForm.isQuit = undefined;
@@ -1154,7 +1153,7 @@ const handleCreate = () => {
     singlePieceType: undefined,
     sex: undefined,
     allotTime: undefined,
-    departmentId: undefined,
+    deptId: undefined,
     remarks: undefined,
     age: undefined,
     city: undefined,
@@ -1506,9 +1505,7 @@ const handleIntentionChange = (record: SysCustomerData, newIntention: number) =>
 // 加载客户有效性标签选项
 const loadCustomerValidOptions = async (type: number) => {
   try {
-    console.log("加载客户有效性标签选项，type:", type);
     const response = await getCustomerValidList({ type, status: 1, pageSize: 100 });
-    console.log("加载到的选项:", response.data.list);
     customerValidOptions.value = response.data.list || [];
   } catch (error) {
     console.error("加载客户有效性标签选项失败:", error);
@@ -1528,9 +1525,6 @@ const loadAllCustomerValidOptions = async () => {
       map.set(item.id, item);
     });
     allCustomerValidOptionsMap.value = map;
-
-    console.log("加载的客户有效性标签:", allOptions);
-    console.log("标签映射Map:", map);
   } catch (error) {
     console.error("加载所有客户有效性标签失败:", error);
   }

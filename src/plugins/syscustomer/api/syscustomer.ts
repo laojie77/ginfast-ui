@@ -29,7 +29,7 @@ export interface SysCustomerData {
     singlePieceType: number; // 贷款类型
     sex: number; // 性别
     allotTime: string; // 分配时间
-    departmentId: number; // 所属部门
+  deptId: number; // 所属部门
     tenantId: number; // 所属公司ID
     remarks: string; // 客户备注
     age: number; // 年龄
@@ -92,7 +92,7 @@ export interface SysCustomerListParams {
     singlePieceType?: number; // 贷款类型
     sex?: number; // 性别
     allotTime?: string; // 分配时间
-    departmentId?: number; // 所属部门
+  deptId?: number; // 所属部门
     tenantId?: number; // 所属公司ID
     remarks?: string; // 客户备注
     age?: number; // 年龄
