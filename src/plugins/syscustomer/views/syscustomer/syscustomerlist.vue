@@ -174,10 +174,18 @@
           :data="dataList"
           :loading="loading"
           :pagination="paginationConfig"
+          row-key="id"
+          :expanded-keys="commentExpandedKeys"
+          :expandable="{ width: 1 }"
           :bordered="{ wrapper: true, cell: true }"
           @page-change="handlePageChange"
           @page-size-change="handlePageSizeChange"
         >
+          <template #expand-row="{ record }">
+            <div v-if="record.customerComment" class="table-customer-comment-row">
+              {{ record.customerComment }}
+            </div>
+          </template>
           <template #columns>
             <a-table-column title="锁定" data-index="isLock" :width="80" ellipsis tooltip>
               <template #cell="{ record }">
@@ -289,11 +297,13 @@
                 <a-popover position="right">
                   <template #content>
                     <div class="remark-popover-content">
-                      {{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}
+                      <div>{{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}</div>
                     </div>
                   </template>
-                  <div class="table-remark-text">
-                    {{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}
+                  <div class="table-remark-wrapper">
+                    <div class="table-remark-text">
+                      {{ formatCustomerRemarkDisplay(record.remarks, record.customerTracesList) || "-" }}
+                    </div>
                   </div>
                 </a-popover>
               </template>
@@ -1035,6 +1045,13 @@ const paginationConfig = computed(() => ({
   showPageSize: true,
   pageSizeOptions: [10, 20, 30, 50]
 }));
+
+const commentExpandedKeys = computed(() =>
+  dataList.value
+    .filter(item => typeof item.customerComment === "string" && item.customerComment.trim())
+    .map(item => item.id)
+    .filter((id): id is number => typeof id === "number")
+);
 
 // 获取数据列表
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
@@ -1812,6 +1829,39 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.table-remark-wrapper {
+  cursor: pointer;
+}
+
+.table-customer-comment-row {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #f53f3f;
+  background: #fff7f7;
+  border-left: 3px solid #f53f3f;
+}
+
+:deep(.arco-table-th.arco-table-operation.arco-table-expand),
+:deep(.arco-table-td.arco-table-operation.arco-table-expand) {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-right: none !important;
+}
+
+:deep(.arco-table-th.arco-table-operation.arco-table-expand .arco-table-cell),
+:deep(.arco-table-td.arco-table-operation.arco-table-expand .arco-table-cell) {
+  display: none !important;
+}
+
+:deep(.arco-table-tr-expand .arco-table-td) {
+  padding: 6px 12px !important;
 }
 
 .remark-popover-content {
