@@ -611,6 +611,7 @@ import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteC
 import type { CustomerValidData, CustomerValidCreateParams, CustomerValidUpdateParams } from "@/api/customervalid";
 import SysCustomerDetail from "./syscustomerdetail.vue";
 import { formatCustomerRemarkDisplay } from "./remark";
+import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "./status-trace";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
@@ -862,9 +863,9 @@ const layoutMode = computed(() => {
   };
   return isMobile.value ? info.mobile : info.desktop;
 });
-const customerStarOption = ref(dictFilter("customerStar"));
-const statusOption = ref(dictFilter("progressStatusArr"));
-const intentionOption = ref(dictFilter("intentionStatusArr"));
+const customerStarOption = ref<Array<{ value: number | string; name: string }>>(dictFilter("customerStar"));
+const statusOption = ref<Array<{ value: number | string; name: string }>>(dictFilter("progressStatusArr"));
+const intentionOption = ref<Array<{ value: number | string; name: string }>>(dictFilter("intentionStatusArr"));
 // 共用字典选项
 const isStatusOption = ref(dictFilter("isStatus"));
 const fromOption = ref(dictFilter("from"));
@@ -885,6 +886,7 @@ const {
   fetchDataList,
   createData,
   updateData,
+  updateCustomerStatusTrace,
   deleteData,
   getDetail,
   resetSearchParams
@@ -1396,9 +1398,15 @@ const handleStatusSave = async () => {
     }
 
     // 准备更新数据
-    const updatePayload = {
-      ...currentRecord,
-      status: Number(statusUpdateForm.newStatus)
+    const updatePayload: any = {
+      customerId: currentRecord.id,
+      status: Number(statusUpdateForm.newStatus),
+      progressRemark: statusUpdateForm.progressRemark,
+      data: buildStatusTraceData(
+        getStatusOptionName(currentRecord.status),
+        getStatusOptionName(Number(statusUpdateForm.newStatus)),
+        statusUpdateForm.progressRemark
+      )
     };
 
     // 处理extra字段，添加progress_remark
@@ -1416,7 +1424,7 @@ const handleStatusSave = async () => {
     updatePayload.extra = JSON.stringify(extraObj);
 
     // 调用更新API
-    await updateData(updatePayload);
+    await updateCustomerStatusTrace(updatePayload);
 
     // 重新加载数据
     await loadData();
@@ -1493,17 +1501,39 @@ const getCustomerStarDisplayText = (record: SysCustomerData) => {
   return customerStarOption.value.find(item => Number(item.value) === record.customerStar)?.name || "";
 };
 
+const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number) => {
+  return options.find(item => Number(item.value) === Number(value))?.name || "";
+};
+
+const getStatusOptionName = (value?: number) => getOptionName(statusOption.value, value);
+
+const getIntentionOptionName = (value?: number) => getOptionName(intentionOption.value, value);
+
+const getCustomerStarOptionName = (value?: number) => getOptionName(customerStarOption.value, value);
+
+const getCustomerValidName = (validId?: number) => {
+  if (!validId) {
+    return "";
+  }
+
+  return allCustomerValidOptionsMap.value.get(validId)?.name || "";
+};
+
 // 处理星级变化
 const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar: number) => {
   try {
     // 直接更新星级，不需要弹窗
     const updatePayload = {
-      ...record,
-      customerStar: Number(newCustomerStar)
+      customerId: record.id,
+      customerStar: Number(newCustomerStar),
+      data: buildCustomerStarTraceData(
+        getCustomerStarOptionName(record.customerStar),
+        getCustomerStarOptionName(Number(newCustomerStar))
+      )
     };
 
     // 调用更新API
-    await updateData(updatePayload);
+    await updateCustomerStatusTrace(updatePayload);
 
     // 重新加载数据
     await loadData();
@@ -1600,9 +1630,15 @@ const handleValidCancel = () => {
 const updateCustomerIntention = async (record: SysCustomerData, newIntention: number, validId?: number) => {
   try {
     // 准备更新数据
-    const updatePayload = {
-      ...record,
-      intention: Number(newIntention)
+    const updatePayload: any = {
+      customerId: record.id,
+      intention: Number(newIntention),
+      intentionValidId: validId ?? 0,
+      data: buildIntentionTraceData(
+        getIntentionOptionName(record.intention),
+        getIntentionOptionName(Number(newIntention)),
+        getCustomerValidName(validId)
+      )
     };
 
     // 处理extra字段，添加对应的reason_id
@@ -1623,7 +1659,7 @@ const updateCustomerIntention = async (record: SysCustomerData, newIntention: nu
     updatePayload.extra = JSON.stringify(extraObj);
 
     // 调用更新API
-    await updateData(updatePayload);
+    await updateCustomerStatusTrace(updatePayload);
 
     // 重新加载数据
     await loadData();

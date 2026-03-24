@@ -1,11 +1,18 @@
 import { ref, computed } from 'vue';
-import type { SysCustomerData, SysCustomerListParams, SysCustomerListResult, SysCustomerResult } from '../api/syscustomer';
+import {
+  SysCustomerData,
+  SysCustomerListParams,
+  SysCustomerListResult,
+  SysCustomerResult,
+  SysCustomerStatusTraceUpdateParams,
+} from "../api/syscustomer";
 import {
     getSysCustomerList,
     createSysCustomer,
     updateSysCustomer,
     deleteSysCustomer,
-    getSysCustomer
+    getSysCustomer,
+  updateSysCustomerStatusTrace
 } from '../api/syscustomer';
 
 export const useSysCustomerPluginHook = () => {
@@ -100,6 +107,15 @@ export const useSysCustomerPluginHook = () => {
             throw error;
         }
     };
+
+  const updateCustomerStatusTrace = async (data: SysCustomerStatusTraceUpdateParams) => {
+    try {
+      const response = await updateSysCustomerStatusTrace(data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
     
     // 重置搜索条件
     const resetSearchParams = () => {
@@ -130,6 +146,7 @@ export const useSysCustomerPluginHook = () => {
         updateData,
         deleteData,
         resetSearchParams,
-        getDetail
+        getDetail,
+      updateCustomerStatusTrace
     };
 };

@@ -74,11 +74,18 @@ export interface SysCustomerData {
     customerTracesList?: SysCustomerTraceData[]; // 客户跟进列表
 }
 
+export interface SysCustomerData {
+    channelId?: number;
+    userId?: number;
+    extra?: string | Record<string, any>;
+    extraData?: Record<string, any>;
+}
+
 export type SysCustomerListResult = BaseResult<{
     list: SysCustomerData[];
     total: number;
 }>;
-
+``
 export interface SysCustomerListParams {
     pageNum: number;
     pageSize: number;
@@ -140,6 +147,16 @@ export interface SysCustomerListParams {
 
 export type SysCustomerResult = BaseResult<SysCustomerData>;
 
+export interface SysCustomerStatusTraceUpdateParams {
+    customerId: number;
+    data?: string;
+    status?: number;
+    intention?: number;
+    customerStar?: number;
+    progressRemark?: string;
+    intentionValidId?: number;
+}
+
 export const getSysCustomerList = (params: SysCustomerListParams) => {
     return http.request<SysCustomerListResult>("get", baseUrlApi("plugins/syscustomer/syscustomer/list"), { params });
 };
@@ -160,3 +177,8 @@ export const deleteSysCustomer = (id: number) => {
 export const getSysCustomer = (id: number) => {
     return http.request<SysCustomerResult>("get", baseUrlApi(`plugins/syscustomer/syscustomer/${id}`));
 };
+
+export const updateSysCustomerStatusTrace= (data: SysCustomerStatusTraceUpdateParams) => {
+  return http.request<SysCustomerData>("put", baseUrlApi(`plugins/syscustomer/syscustomer/updateCustomerStatusTrace`), { data });
+};
+

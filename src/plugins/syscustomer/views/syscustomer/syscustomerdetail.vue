@@ -281,7 +281,7 @@
       <a-modal
         v-model:visible="statusModalVisible"
         :title="getStatusModalTitle()"
-        :on-before-ok="handleStatusSave"
+        :on-before-ok="handleStatusSaveQuick"
         @cancel="handleStatusCancel"
         :width="420"
       >
@@ -300,7 +300,7 @@
       <a-modal
         v-model:visible="validModalVisible"
         :title="getValidModalTitle()"
-        :on-before-ok="handleValidSave"
+        :on-before-ok="handleValidSaveQuick"
         @cancel="handleValidCancel"
         :width="600"
       >
@@ -412,9 +412,16 @@ import { Message } from "@arco-design/web-vue";
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid, type CustomerValidData } from "@/api/customervalid";
 import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
-import { getSysCustomer, updateSysCustomer, type SysCustomerData } from "../../api/syscustomer";
+import {
+  getSysCustomer,
+  updateSysCustomer,
+  updateSysCustomerStatusTrace,
+  type SysCustomerData,
+  type SysCustomerStatusTraceUpdateParams
+} from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
 import { formatRemarkDisplay } from "./remark";
+import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "./status-trace";
 
 import {
   createSysCustomerTraces,
@@ -679,6 +686,14 @@ const getIntentionDisplayText = () => {
   return validName ? `${intentionName} - ${validName}` : intentionName;
 };
 
+const getCustomerValidName = (validId?: number) => {
+  if (!validId) {
+    return "";
+  }
+
+  return allCustomerValidOptionsMap.value.get(validId)?.name || "";
+};
+
 const getSinglePieceTypeDisplayText = () => {
   if (localCustomer.value?.singlePieceType === undefined || localCustomer.value?.singlePieceType === null) {
     return "贷款类型：未设置";
@@ -772,6 +787,32 @@ const saveCustomerPatch = async (patch: CustomerDetailData, fieldKey: string, su
   }
 };
 
+const saveCustomerStatusTracePatch = async (
+  payload: SysCustomerStatusTraceUpdateParams,
+  fieldKey: string,
+  successText: string
+) => {
+  if (!localCustomer.value?.id) {
+    Message.error("客户信息不存在");
+    return;
+  }
+
+  savingField.value = fieldKey;
+
+  try {
+    await updateSysCustomerStatusTrace(payload);
+    await refreshCustomerDetail();
+    await loadFollowRecords();
+    Message.success(successText);
+  } catch (error) {
+    console.error(`更新${fieldKey}失败:`, error);
+    Message.error(`${successText}失败`);
+    throw error;
+  } finally {
+    savingField.value = "";
+  }
+};
+
 const handleTopFieldChange = async (field: keyof CustomerDetailData, value: unknown) => {
   if (value === undefined || value === null || !localCustomer.value?.id) return;
 
@@ -806,7 +847,20 @@ const handleIntentionSelect = async (value: string | number) => {
 
   if (newIntention === 0) {
     // intention=0 待确认，不弹窗，直接更新
-    await handleTopFieldChange("intention", value);
+    if (!localCustomer.value?.id) {
+      return;
+    }
+
+    await saveCustomerStatusTracePatch(
+      {
+        customerId: localCustomer.value.id,
+        intention: newIntention,
+        intentionValidId: 0,
+        data: buildIntentionTraceData(getIntentionText(currentIntention), getIntentionText(newIntention))
+      },
+      "intention",
+      `已更新${TOP_FIELD_LABELS.intention}`
+    );
     return;
   }
 
@@ -821,7 +875,24 @@ const handleIntentionSelect = async (value: string | number) => {
 };
 
 const handleStarSelect = async (value: string | number) => {
-  await handleTopFieldChange("customerStar", value);
+  if (!localCustomer.value?.id) {
+    return;
+  }
+
+  const nextValue = Number(value);
+  if (Number(localCustomer.value.customerStar) === nextValue) {
+    return;
+  }
+
+  await saveCustomerStatusTracePatch(
+    {
+      customerId: localCustomer.value.id,
+      customerStar: nextValue,
+      data: buildCustomerStarTraceData(getStarText(localCustomer.value.customerStar), getStarText(nextValue))
+    },
+    "customerStar",
+    `已更新${TOP_FIELD_LABELS.customerStar}`
+  );
 };
 
 const handleSinglePieceTypeSelect = async (value: string | number) => {
@@ -887,11 +958,13 @@ const handleAddRecord = async () => {
 
   try {
     await createSysCustomerTraces({
+      userId:localCustomer.value?.userId,
       customerId: props.customerId,
       data: newRecord.value.trim()
     });
     newRecord.value = "";
     await loadFollowRecords();
+    await refreshCustomerDetail();
     Message.success("跟进记录添加成功");
   } catch (error) {
     console.error("添加跟进记录失败:", error);
@@ -963,6 +1036,76 @@ const handleValidSave = async () => {
     return false;
   }
 };
+
+const handleStatusSaveQuick = async () => {
+  if (!localCustomer.value?.id) {
+    Message.error("客户信息不存在");
+    return false;
+  }
+
+  try {
+    await saveCustomerStatusTracePatch(
+      {
+        customerId: localCustomer.value.id,
+        status: statusUpdateForm.newStatus,
+        progressRemark: statusUpdateForm.progressRemark,
+        data: buildStatusTraceData(
+          getStatusText(statusUpdateForm.currentStatus),
+          getStatusText(statusUpdateForm.newStatus),
+          statusUpdateForm.progressRemark
+        )
+      },
+      "status",
+      `已更新${TOP_FIELD_LABELS.status}`
+    );
+
+    statusModalVisible.value = false;
+    return true;
+  } catch (error) {
+    console.error("保存业务阶段失败:", error);
+    Message.error("保存业务阶段失败");
+    return false;
+  }
+};
+
+const handleValidSaveQuick = async () => {
+  if (!localCustomer.value?.id) {
+    Message.error("客户信息不存在");
+    return false;
+  }
+
+  if (!validUpdateForm.validId) {
+    Message.error("请选择有效说明");
+    return false;
+  }
+
+  try {
+    await saveCustomerStatusTracePatch(
+      {
+        customerId: localCustomer.value.id,
+        intention: validUpdateForm.newIntention,
+        intentionValidId: validUpdateForm.validId,
+        data: buildIntentionTraceData(
+          getIntentionText(validUpdateForm.currentIntention),
+          getIntentionText(validUpdateForm.newIntention),
+          getCustomerValidName(validUpdateForm.validId)
+        )
+      },
+      "intention",
+      `已更新${TOP_FIELD_LABELS.intention}`
+    );
+
+    validModalVisible.value = false;
+    return true;
+  } catch (error) {
+    console.error("保存客户有效失败:", error);
+    Message.error("保存客户有效失败");
+    return false;
+  }
+};
+
+void handleStatusSave;
+void handleValidSave;
 
 const handleStatusCancel = () => {
   statusModalVisible.value = false;
