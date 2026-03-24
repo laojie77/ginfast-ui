@@ -122,7 +122,7 @@
                         :color="localCustomer?.isLock === 1 ? 'red' : 'blue'"
                         size="small"
                         @click="handleToggleLock"
-                        style="cursor: pointer;"
+                        style="cursor: pointer"
                       >
                         {{ localCustomer?.isLock === 1 ? "已锁定" : "未锁定" }}
                       </a-tag>
@@ -131,7 +131,7 @@
                       {{ localCustomer?.isRepeat === 1 ? "重复客户" : "正常数据" }}
                     </a-tag>
                     <a-tag :color="localCustomer?.from === 1 ? 'blue' : 'red'" size="small">
-                      {{ fromOption[localCustomer?.from]?.name || '未知来源' }}
+                      {{ fromOption[localCustomer?.from]?.name || "未知来源" }}
                     </a-tag>
                   </div>
                 </div>
@@ -184,7 +184,7 @@
                   <div class="remark-content">
                     <a-tag color="red">
                       <template #icon>
-                        <icon-subscribe-add/>
+                        <icon-subscribe-add />
                       </template>
                       {{ localCustomer?.customerComment || "暂无评价" }}
                     </a-tag>
@@ -196,11 +196,7 @@
                   <div class="panel-title panel-title--compact">
                     跟进记录
                     <span class="panel-title-note">
-                      <a-tag
-                        color="green"
-                        size="small"
-                        style="cursor: pointer;"
-                      >
+                      <a-tag color="green" size="small" style="cursor: pointer">
                         分配时间：{{ formatDisplayTime(localCustomer?.allotTime) }}
                       </a-tag>
                     </span>
@@ -232,7 +228,6 @@
                 </div>
               </div>
               <div ref="messagesContainer" :class="['chat-messages', { 'chat-messages--empty': !followRecords.length }]">
-
                 <div v-if="followRecords.length" class="chat-message-list">
                   <div v-for="record in followRecords" :key="record.id" class="message-item">
                     <div class="message-left">
@@ -311,7 +306,7 @@
             @click="handleManageValid"
             style="color: #165dff"
             v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-          >管理</a-button
+            >管理</a-button
           >
         </div>
         <a-form :model="validUpdateForm" ref="validFormRef">
@@ -409,7 +404,13 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid, type CustomerValidData } from "@/api/customervalid";
+import {
+  getCustomerValidList,
+  createCustomerValid,
+  updateCustomerValid,
+  deleteCustomerValid,
+  type CustomerValidData
+} from "@/api/customervalid";
 import { formatTime } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import {
@@ -431,11 +432,11 @@ import {
 const fromOption = ref(dictFilter("from"));
 type CustomerDetailData = Partial<SysCustomerData> &
   Record<string, any> & {
-  id?: number;
-  channelId?: number;
-  userId?: number;
-  extra?: string | Record<string, any>;
-};
+    id?: number;
+    channelId?: number;
+    userId?: number;
+    extra?: string | Record<string, any>;
+  };
 
 interface SelectOption {
   value: number;
@@ -604,12 +605,20 @@ const formatDisplayTime = (value?: string) => {
 };
 
 const getTextByOptions = (options: SelectOption[], value?: number) => {
+  if (value === undefined || value === null) {
+    return "-";
+  }
   return options.find(item => Number(item.value) === Number(value))?.name || "-";
 };
 
 const getStatusText = (status?: number) => getTextByOptions(props.statusOptions, status);
 const getIntentionText = (intention?: number) => getTextByOptions(props.intentionOptions, intention);
-const getStarText = (star?: number) => getTextByOptions(props.starOptions, star);
+const getStarText = (star?: number | null) => {
+  if (star === undefined || star === null) {
+    return "未定级";
+  }
+  return getTextByOptions(props.starOptions, star);
+};
 const getSexText = (sex?: number) => getTextByOptions(props.sexOptions, sex);
 const getSinglePieceTypeText = (type?: number) => getTextByOptions(props.singlePieceTypeOptions, type);
 const getChannelName = (channelId?: number) => getTextByOptions(props.channelOptions, channelId);
@@ -644,8 +653,8 @@ const getIntentionColor = (intention?: number) => {
   return intention === 0 ? "" : intention === 1 ? "green" : intention === 2 ? "red" : "orange";
 };
 
-const getStarColor = (star?: number) => {
-  if (star === undefined) return "";
+const getStarColor = (star?: number | null) => {
+  if (star === undefined || star === null) return "";
   return [0, 1, 2].includes(Number(star)) ? "red" : "arcoblue";
 };
 
@@ -880,7 +889,7 @@ const handleStarSelect = async (value: string | number) => {
   }
 
   const nextValue = Number(value);
-  if (Number(localCustomer.value.customerStar) === nextValue) {
+  if (localCustomer.value.customerStar === nextValue) {
     return;
   }
 
@@ -958,7 +967,7 @@ const handleAddRecord = async () => {
 
   try {
     await createSysCustomerTraces({
-      userId:localCustomer.value?.userId,
+      userId: localCustomer.value?.userId,
       customerId: props.customerId,
       data: newRecord.value.trim()
     });
@@ -1597,7 +1606,10 @@ watch(
 
 .chat-metric--interactive {
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .chat-metric--interactive:hover {

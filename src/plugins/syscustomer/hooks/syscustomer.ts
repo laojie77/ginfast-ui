@@ -1,112 +1,114 @@
-import { ref, computed } from 'vue';
+import { ref, computed } from "vue";
 import {
+  SysCustomerCreateParams,
   SysCustomerData,
   SysCustomerListParams,
   SysCustomerListResult,
   SysCustomerResult,
   SysCustomerStatusTraceUpdateParams,
+  SysCustomerUpdateParams
 } from "../api/syscustomer";
 import {
-    getSysCustomerList,
-    createSysCustomer,
-    updateSysCustomer,
-    deleteSysCustomer,
-    getSysCustomer,
+  getSysCustomerList,
+  createSysCustomer,
+  updateSysCustomer,
+  deleteSysCustomer,
+  getSysCustomer,
   updateSysCustomerStatusTrace
-} from '../api/syscustomer';
+} from "../api/syscustomer";
 
 export const useSysCustomerPluginHook = () => {
-    // State
-    const dataList = ref<SysCustomerData[]>([]);
-    const loading = ref<boolean>(false);
-    const total = ref<number>(0);
-    const currentPage = ref<number>(1);
-    const pageSize = ref<number>(10);
-    const searchParams = ref<Partial<SysCustomerListParams>>({});
+  // State
+  const dataList = ref<SysCustomerData[]>([]);
+  const loading = ref<boolean>(false);
+  const total = ref<number>(0);
+  const currentPage = ref<number>(1);
+  const pageSize = ref<number>(10);
+  const searchParams = ref<Partial<SysCustomerListParams>>({});
 
-    // Computed
-    const getDataList = computed(() => dataList.value);
-    const isLoading = computed(() => loading.value);
-    const getTotal = computed(() => total.value);
-    const getCurrentPage = computed(() => currentPage.value);
-    const getPageSize = computed(() => pageSize.value);
-    const getSearchParams = computed(() => searchParams.value);
+  // Computed
+  const getDataList = computed(() => dataList.value);
+  const isLoading = computed(() => loading.value);
+  const getTotal = computed(() => total.value);
+  const getCurrentPage = computed(() => currentPage.value);
+  const getPageSize = computed(() => pageSize.value);
+  const getSearchParams = computed(() => searchParams.value);
 
-    // Actions
-    const fetchDataList = async (params?: Partial<SysCustomerListParams>) => {
-        loading.value = true;
-        try {
-            // 更新分页参数和搜索条件
-            if (params?.pageNum !== undefined) {
-                currentPage.value = params.pageNum;
-            }
-            if (params?.pageSize !== undefined) {
-                pageSize.value = params.pageSize;
-            }
-            
-            // 更新搜索参数
-            if (params) {
-                searchParams.value = { ...searchParams.value, ...params };
-            }
+  // Actions
+  const fetchDataList = async (params?: Partial<SysCustomerListParams>) => {
+    loading.value = true;
+    try {
+      // 更新分页参数和搜索条件
+      if (params?.pageNum !== undefined) {
+        currentPage.value = params.pageNum;
+      }
+      if (params?.pageSize !== undefined) {
+        pageSize.value = params.pageSize;
+      }
 
-            // 构造请求参数
-            const requestParams: SysCustomerListParams = {
-                pageNum: currentPage.value,
-                pageSize: pageSize.value,
-                ...searchParams.value
-            };
+      // 更新搜索参数
+      if (params) {
+        searchParams.value = { ...searchParams.value, ...params };
+      }
 
-            const response: SysCustomerListResult = await getSysCustomerList(requestParams);
+      // 构造请求参数
+      const requestParams: SysCustomerListParams = {
+        pageNum: currentPage.value,
+        pageSize: pageSize.value,
+        ...searchParams.value
+      };
 
-            // 根据返回的数据结构处理
-            if (Array.isArray(response.data.list)) {
-                // 如果返回的是数组格式（旧格式）
-                dataList.value = response.data.list || [];
-                total.value = response.data.total || 0;
-            }
-        } finally {
-            loading.value = false;
-        }
-    };
+      const response: SysCustomerListResult = await getSysCustomerList(requestParams);
 
-    const createData = async (data: Omit<SysCustomerData, 'id'>) => {
-        try {
-            const response = await createSysCustomer(data);
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    };
+      // 根据返回的数据结构处理
+      if (Array.isArray(response.data.list)) {
+        // 如果返回的是数组格式（旧格式）
+        dataList.value = response.data.list || [];
+        total.value = response.data.total || 0;
+      }
+    } finally {
+      loading.value = false;
+    }
+  };
 
-    const updateData = async (data: Partial<SysCustomerData>) => {
-        try {
-            const response = await updateSysCustomer(data);
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    };
+  const createData = async (data: SysCustomerCreateParams) => {
+    try {
+      const response = await createSysCustomer(data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
 
-    const deleteData = async (id: number) => {
-        try {
-            await deleteSysCustomer(id);
-            dataList.value = dataList.value.filter((item: SysCustomerData) => item.id !== id);
-            // 减少总数
-            total.value = Math.max(0, total.value - 1);
-        } catch (error) {
-            throw error;
-        }
-    };
+  const updateData = async (data: SysCustomerUpdateParams) => {
+    try {
+      const response = await updateSysCustomer(data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
 
-    // 根据ID获取用户详情
-    const getDetail = async (id: number) : Promise<SysCustomerResult> => {
-        try {
-            const response = await getSysCustomer(id);
-            return response;
-        } catch (error) {
-            throw error;
-        }
-    };
+  const deleteData = async (id: number) => {
+    try {
+      await deleteSysCustomer(id);
+      dataList.value = dataList.value.filter((item: SysCustomerData) => item.id !== id);
+      // 减少总数
+      total.value = Math.max(0, total.value - 1);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // 根据ID获取用户详情
+  const getDetail = async (id: number): Promise<SysCustomerResult> => {
+    try {
+      const response = await getSysCustomer(id);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const updateCustomerStatusTrace = async (data: SysCustomerStatusTraceUpdateParams) => {
     try {
@@ -116,37 +118,37 @@ export const useSysCustomerPluginHook = () => {
       throw error;
     }
   };
-    
-    // 重置搜索条件
-    const resetSearchParams = () => {
-        searchParams.value = {};
-        currentPage.value = 1;
-    };
 
-    return {
-        // State
-        dataList,
-        loading,
-        total,
-        currentPage,
-        pageSize,
-        searchParams,
+  // 重置搜索条件
+  const resetSearchParams = () => {
+    searchParams.value = {};
+    currentPage.value = 1;
+  };
 
-        // Computed
-        getDataList,
-        isLoading,
-        getTotal,
-        getCurrentPage,
-        getPageSize,
-        getSearchParams,
+  return {
+    // State
+    dataList,
+    loading,
+    total,
+    currentPage,
+    pageSize,
+    searchParams,
 
-        // Actions
-        fetchDataList,
-        createData,
-        updateData,
-        deleteData,
-        resetSearchParams,
-        getDetail,
-      updateCustomerStatusTrace
-    };
+    // Computed
+    getDataList,
+    isLoading,
+    getTotal,
+    getCurrentPage,
+    getPageSize,
+    getSearchParams,
+
+    // Actions
+    fetchDataList,
+    createData,
+    updateData,
+    deleteData,
+    resetSearchParams,
+    getDetail,
+    updateCustomerStatusTrace
+  };
 };

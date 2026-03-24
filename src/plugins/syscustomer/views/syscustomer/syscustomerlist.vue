@@ -137,7 +137,7 @@
               <!-- 星级回传选择框查询（radio/select/checkbox统一使用select） -->
               <a-form-item field="starStatus" label="星级回传">
                 <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
-                  <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
+                  <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{
                     item.name
                   }}</a-option>
                 </a-select>
@@ -200,7 +200,7 @@
             <a-table-column title="客户编号" data-index="num" :width="200" ellipsis tooltip />
             <a-table-column title="姓名" data-index="name" :width="120" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ record.name || '未命名客户' }}
+                {{ record.name || "未命名客户" }}
               </template>
             </a-table-column>
             <a-table-column title="手机号" data-index="mobile" :width="150" ellipsis tooltip />
@@ -260,11 +260,7 @@
               <template #cell="{ record }">
                 <a-dropdown @select="value => handleCustomerStarChange(record, value)">
                   <a-tooltip :content="getCustomerStarDisplayText(record)" position="top">
-                    <a-tag
-                      size="small"
-                      :color="[0, 1, 2].includes(record.customerStar) ? 'red' : 'arcoblue'"
-                      class="dropdown-tag"
-                    >
+                    <a-tag size="small" :color="getCustomerStarTagColor(record.customerStar)" class="dropdown-tag">
                       {{ getCustomerStarDisplayText(record) }}
                     </a-tag>
                   </a-tooltip>
@@ -355,7 +351,7 @@
             <a-table-column title="星级回传" data-index="starStatus" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.starStatus === 1 ? 'arcoblue' : 'red'">
-                  {{ taskStatusOption[record.starStatus]?.name }}
+                  {{ starStatusOption[record.starStatus]?.name }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -602,7 +598,7 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
-import type { SysCustomerData } from "../../api/syscustomer";
+import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
 import { formatTime } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
@@ -868,6 +864,7 @@ const statusOption = ref<Array<{ value: number | string; name: string }>>(dictFi
 const intentionOption = ref<Array<{ value: number | string; name: string }>>(dictFilter("intentionStatusArr"));
 // 共用字典选项
 const isStatusOption = ref(dictFilter("isStatus"));
+const starStatusOption = ref(dictFilter("starStatus"));
 const fromOption = ref(dictFilter("from"));
 const isSmsOption = ref(dictFilter("isSms"));
 const taskStatusOption = ref(dictFilter("taskStatus"));
@@ -1288,25 +1285,69 @@ const handleDelete = async (id: number) => {
 };
 
 // 保存数据
+const getTrimmedString = (value: unknown) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const buildExtraPayload = () => {
+  const source = editingData.extraData && typeof editingData.extraData === "object" ? editingData.extraData : {};
+  const extraData = Object.entries(source).reduce<Record<string, unknown>>((result, [key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      result[key] = value;
+    }
+    return result;
+  }, {});
+
+  return JSON.stringify(extraData);
+};
+
+const buildCreatePayload = (): SysCustomerCreateParams => ({
+  name: getTrimmedString(editingData.name),
+  mobile: getTrimmedString(editingData.mobile) || "",
+  moneyDemand: editingData.moneyDemand ?? 0,
+  channelId: Number(editingData.channelId ?? 0),
+  extra: buildExtraPayload(),
+  remarks: getTrimmedString(editingData.remarks),
+  ...(editingData.customerStar != null ? { customerStar: Number(editingData.customerStar) } : {}),
+  ...(editingData.status != null ? { status: Number(editingData.status) } : {}),
+  ...(editingData.intention != null ? { intention: Number(editingData.intention) } : {}),
+  ...(editingData.sex != null ? { sex: Number(editingData.sex) } : {}),
+  ...(editingData.age != null ? { age: Number(editingData.age) } : {})
+});
+
+const buildUpdatePayload = (): SysCustomerUpdateParams => ({
+  id: Number(editingData.id),
+  name: getTrimmedString(editingData.name),
+  mobile: getTrimmedString(editingData.mobile) || "",
+  moneyDemand: editingData.moneyDemand ?? 0,
+  channelId: editingData.channelId != null ? Number(editingData.channelId) : undefined,
+  customerStar: editingData.customerStar ?? null,
+  status: editingData.status ?? 0,
+  intention: editingData.intention ?? 0,
+  extra: buildExtraPayload(),
+  sex: editingData.sex ?? 2,
+  remarks: getTrimmedString(editingData.remarks),
+  age: editingData.age ?? null,
+  deptId: editingData.deptId != null ? Number(editingData.deptId) : undefined,
+  isLock: editingData.isLock ?? 0,
+  singlePieceType: editingData.singlePieceType ?? 0
+});
+
 const handleSave = async () => {
   const isValid = await formRef.value?.validate();
   if (isValid) return false;
   try {
-    const dataToSave = JSON.parse(JSON.stringify(editingData));
-
-    // 处理extra字段：将extraData对象转换为JSON字符串
-    if (editingData.extraData && typeof editingData.extraData === "object") {
-      dataToSave.extra = JSON.stringify(editingData.extraData);
-    } else {
-      dataToSave.extra = "{}";
-    }
-
+    // 只提交保存所需字段，避免把列表/详情字段一起带给接口
     if (editingData.id) {
       // 更新数据
-      await updateData(dataToSave);
+      await updateData(buildUpdatePayload());
     } else {
       // 创建数据
-      await createData(dataToSave);
+      await createData(buildCreatePayload());
     }
     // 重新加载数据
     await loadData();
@@ -1498,7 +1539,10 @@ const getIntentionDisplayText = (record: SysCustomerData) => {
 
 // 获取星级显示文本
 const getCustomerStarDisplayText = (record: SysCustomerData) => {
-  return customerStarOption.value.find(item => Number(item.value) === record.customerStar)?.name || "";
+  if (record.customerStar == null) {
+    return "未定级";
+  }
+  return customerStarOption.value.find(item => Number(item.value) === Number(record.customerStar))?.name || "未定级";
 };
 
 const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number) => {
@@ -1509,7 +1553,19 @@ const getStatusOptionName = (value?: number) => getOptionName(statusOption.value
 
 const getIntentionOptionName = (value?: number) => getOptionName(intentionOption.value, value);
 
-const getCustomerStarOptionName = (value?: number) => getOptionName(customerStarOption.value, value);
+const getCustomerStarOptionName = (value?: number | null) => {
+  if (value == null) {
+    return "未定级";
+  }
+  return getOptionName(customerStarOption.value, value);
+};
+
+const getCustomerStarTagColor = (value?: number | null) => {
+  if (value == null) {
+    return "";
+  }
+  return [0, 1, 2].includes(Number(value)) ? "red" : "arcoblue";
+};
 
 const getCustomerValidName = (validId?: number) => {
   if (!validId) {
