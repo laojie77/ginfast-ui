@@ -61,7 +61,7 @@
             <a-table-column title="状态" data-index="status" :width="70" align="center">
               <template #cell="{ record }">
                 <a-tag bordered size="small" :color="record.status === 1 ? 'arcoblue' : 'red'">
-                  {{ messageTypeOption[record.status]?.name }}
+                  {{ getDictOptionName(messageTypeOption, record.status) }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -126,7 +126,7 @@
             <a-table-column title="回传" data-index="isStar" :width="100" align="center">
               <template #cell="{ record }">
                 <a-tag bordered size="small" :color="record.isStar === 1 ? 'arcoblue' : 'red'">
-                  {{ messageTypeOption[record.isStar]?.name }}
+                  {{ getDictOptionName(messageTypeOption, record.isStar) }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -278,6 +278,7 @@ import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { Message } from '@arco-design/web-vue';
 import { IconFile } from '@arco-design/web-vue/es/icon';
 import { getTenantList } from '@/api/tenant';
+import { getDictOptionName } from "@/globals";
 const { isMobile } = useDevicesSize();
 
 // 弹窗布局配置

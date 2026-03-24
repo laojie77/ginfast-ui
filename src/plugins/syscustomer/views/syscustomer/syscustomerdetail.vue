@@ -131,7 +131,7 @@
                       {{ localCustomer?.isRepeat === 1 ? "重复客户" : "正常数据" }}
                     </a-tag>
                     <a-tag :color="localCustomer?.from === 1 ? 'blue' : 'red'" size="small">
-                      {{ fromOption[localCustomer?.from]?.name || "未知来源" }}
+                      {{ getFromText(localCustomer?.from) }}
                     </a-tag>
                   </div>
                 </div>
@@ -411,7 +411,7 @@ import {
   deleteCustomerValid,
   type CustomerValidData
 } from "@/api/customervalid";
-import { formatTime } from "@/globals";
+import { formatTime, getDictOptionName } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import {
   getSysCustomer,
@@ -439,7 +439,7 @@ type CustomerDetailData = Partial<SysCustomerData> &
   };
 
 interface SelectOption {
-  value: number;
+  value: number | string;
   name: string;
 }
 
@@ -608,7 +608,7 @@ const getTextByOptions = (options: SelectOption[], value?: number) => {
   if (value === undefined || value === null) {
     return "-";
   }
-  return options.find(item => Number(item.value) === Number(value))?.name || "-";
+  return getDictOptionName(options, value, "-");
 };
 
 const getStatusText = (status?: number) => getTextByOptions(props.statusOptions, status);
@@ -623,6 +623,7 @@ const getSexText = (sex?: number) => getTextByOptions(props.sexOptions, sex);
 const getSinglePieceTypeText = (type?: number) => getTextByOptions(props.singlePieceTypeOptions, type);
 const getChannelName = (channelId?: number) => getTextByOptions(props.channelOptions, channelId);
 const getFollowerName = (userId?: number) => getTextByOptions(props.followerOptions, userId);
+const getFromText = (from?: number | null) => getTextByOptions(fromOption.value, from ?? undefined);
 
 const getDepartmentName = (deptId?: number) => {
   if (!deptId || !props.departmentTree.length) return "-";

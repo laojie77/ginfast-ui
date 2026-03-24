@@ -317,41 +317,41 @@
             <a-table-column title="所在城市" data-index="city" :width="100" ellipsis tooltip />
             <a-table-column title="客户来源" data-index="from" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ fromOption[record.from]?.name }}
+                {{ getOptionName(fromOption, record.from) }}
               </template>
             </a-table-column>
             <a-table-column title="再分配" data-index="isReassign" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isReassign === 1 ? 'arcoblue' : 'red'">
-                  {{ isStatusOption[record.isReassign]?.name }}
+                  {{ getOptionName(isStatusOption, record.isReassign) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="离职数据" data-index="isQuit" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isQuit === 1 ? 'arcoblue' : 'red'">
-                  {{ isStatusOption[record.isQuit]?.name }}
+                  {{ getOptionName(isStatusOption, record.isQuit) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="重复标记" data-index="isRepeat" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isRepeat === 1 ? 'arcoblue' : 'red'">
-                  {{ isStatusOption[record.isRepeat]?.name }}
+                  {{ getOptionName(isStatusOption, record.isRepeat) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="短信" data-index="isSms" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isSms === 1 ? 'arcoblue' : 'red'">
-                  {{ isSmsOption[record.isSms]?.name }}
+                  {{ getOptionName(isSmsOption, record.isSms) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="星级回传" data-index="starStatus" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.starStatus === 1 ? 'arcoblue' : 'red'">
-                  {{ starStatusOption[record.starStatus]?.name }}
+                  {{ getOptionName(starStatusOption, record.starStatus) }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -599,7 +599,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
 import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
-import { formatTime } from "@/globals";
+import { formatTime, getDictOptionName } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
 import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../../syschannelcompany/api/syschannelcompany";
@@ -1545,8 +1545,8 @@ const getCustomerStarDisplayText = (record: SysCustomerData) => {
   return customerStarOption.value.find(item => Number(item.value) === Number(record.customerStar))?.name || "未定级";
 };
 
-const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number) => {
-  return options.find(item => Number(item.value) === Number(value))?.name || "";
+const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number | string | null) => {
+  return getDictOptionName(options, value, "");
 };
 
 const getStatusOptionName = (value?: number) => getOptionName(statusOption.value, value);

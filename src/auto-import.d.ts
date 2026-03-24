@@ -19,6 +19,8 @@ declare global {
   const formatTime: typeof import('./globals/index')['formatTime']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getDictOption: typeof import('./globals/index')['getDictOption']
+  const getDictOptionName: typeof import('./globals/index')['getDictOptionName']
   const h: typeof import('vue')['h']
   const inject: typeof import('vue')['inject']
   const isProxy: typeof import('vue')['isProxy']

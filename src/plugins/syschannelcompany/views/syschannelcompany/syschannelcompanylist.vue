@@ -48,7 +48,7 @@
                   <a-table-column title="回传" data-index="isStar" :width="100" align="center">
                     <template #cell="{ record }">
                       <a-tag bordered size="small" :color="record.isStar === 1 ? 'arcoblue' : 'red'">
-                        {{ messageTypeOption[record.isStar]?.name }}
+                        {{ getDictOptionName(messageTypeOption, record.isStar) }}
                       </a-tag>
                     </template>
                   </a-table-column>
@@ -98,6 +98,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useSysChannelCompanyPluginHook } from '../../hooks/syschannelcompany';
 import type { SysChannelCompanyData } from '../../api/syschannelcompany';
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
+import { getDictOptionName } from "@/globals";
 const { isMobile } = useDevicesSize();
 
 // 弹窗布局配置

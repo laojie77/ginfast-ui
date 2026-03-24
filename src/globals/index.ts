@@ -31,6 +31,29 @@ export const dictFilter = (code: string) => {
 };
 
 /**
+ * 按字典项的 value 字段查找对应对象，避免把业务值误当成数组下标使用。
+ * 例如字典值为 1/2/3 时，传入 3 会命中 value=3 的项，而不是数组第 4 项。
+ */
+export const getDictOption = <T extends { value: number | string }>(options: T[], value?: number | string | null) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return options.find(item => Number(item.value) === Number(value));
+};
+
+/**
+ * 按字典项的 value 字段获取显示名称。
+ * 常用于表格、详情页等展示场景，找不到时返回 fallback，避免界面出现 undefined。
+ */
+export const getDictOptionName = <T extends { value: number | string; name?: string }>(
+  options: T[],
+  value?: number | string | null,
+  fallback: string = ""
+) => {
+  return getDictOption(options, value)?.name || fallback;
+};
+
+/**
  *
  * Message提示框
  * @param {string} type 提示框类型
