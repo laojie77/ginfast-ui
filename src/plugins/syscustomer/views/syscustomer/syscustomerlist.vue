@@ -385,7 +385,7 @@
         :title="editingData.id ? '编辑客户' : '新建客户'"
         :on-before-ok="handleSave"
         @cancel="handleCancel"
-        :width="isMobile ? '95%' : '760px'"
+        width="auto"
       >
         <div class="customer-editor">
           <div class="editor-hero">

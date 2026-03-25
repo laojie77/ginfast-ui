@@ -112,7 +112,26 @@
                 </a-avatar>
                 <div class="customer-summary">
                   <div class="customer-name-row">
-                    <span class="customer-name">{{ localCustomer?.name || "未命名客户" }}</span>
+                    <div class="editable-field editable-field--name">
+                      <template v-if="editingField === 'name'">
+                        <a-input
+                          ref="inlineEditInputRef"
+                          v-model="editingValue"
+                          class="inline-edit-input inline-edit-input--name"
+                          :max-length="50"
+                          allow-clear
+                          @press-enter="submitInlineEdit('name')"
+                          @keydown.esc="cancelInlineEdit"
+                          @blur="submitInlineEdit('name')"
+                        />
+                      </template>
+                      <template v-else>
+                        <span class="customer-name editable-field__value" @click="startInlineEdit('name')">
+                          {{ localCustomer?.name || "未命名客户" }}
+                        </span>
+                        <span class="editable-field__action" @click="startInlineEdit('name')">点击修改</span>
+                      </template>
+                    </div>
                     <span class="customer-sex">{{ getSexText(localCustomer?.sex) }}</span>
                   </div>
                   <div class="customer-phone">{{ localCustomer?.mobile || "-" }}</div>
@@ -140,7 +159,44 @@
               <div class="summary-grid">
                 <div v-for="item in summaryItems" :key="item.label" class="summary-item">
                   <div class="summary-label">{{ item.label }}</div>
-                  <div class="summary-value">{{ item.value }}</div>
+                  <div
+                    v-if="item.editable && item.field"
+                    class="editable-field editable-field--summary"
+                    :class="{ 'editable-field--active': editingField === item.field }"
+                  >
+                    <template v-if="editingField === item.field">
+                      <a-input
+                        v-if="item.inputType === 'text'"
+                        ref="inlineEditInputRef"
+                        v-model="editingValue"
+                        class="inline-edit-input"
+                        :max-length="item.maxLength"
+                        allow-clear
+                        @press-enter="submitInlineEdit(item.field)"
+                        @keydown.esc="cancelInlineEdit"
+                        @blur="submitInlineEdit(item.field)"
+                      />
+                      <a-input-number
+                        v-else
+                        ref="inlineEditInputRef"
+                        v-model="editingNumberValue"
+                        class="inline-edit-input"
+                        hide-button
+                        :min="0"
+                        :precision="item.precision"
+                        @keydown.enter.prevent="submitInlineEdit(item.field)"
+                        @keydown.esc.prevent="cancelInlineEdit"
+                        @blur="submitInlineEdit(item.field)"
+                      />
+                    </template>
+                    <template v-else>
+                      <div class="summary-value editable-field__value" @click="startInlineEdit(item.field)">
+                        {{ item.value }}
+                      </div>
+                      <span class="editable-field__action" @click="startInlineEdit(item.field)">点击修改</span>
+                    </template>
+                  </div>
+                  <div v-else class="summary-value">{{ item.value }}</div>
                 </div>
               </div>
             </div>
@@ -449,6 +505,18 @@ interface SelectOption {
   name: string;
 }
 
+type InlineEditableField = "name" | "moneyDemand" | "age";
+
+interface SummaryItem {
+  label: string;
+  value: string;
+  editable?: boolean;
+  field?: InlineEditableField;
+  inputType?: "text" | "number";
+  maxLength?: number;
+  precision?: number;
+}
+
 interface Props {
   visible: boolean;
   customerId?: number;
@@ -533,6 +601,10 @@ const followRecords = ref<SysCustomerTracesData[]>([]);
 const newRecord = ref("");
 const addingRecord = ref(false);
 const messagesContainer = ref<HTMLElement>();
+const inlineEditInputRef = ref();
+const editingField = ref<InlineEditableField>();
+const editingValue = ref<string | undefined>("");
+const inlineEditSubmittingField = ref<InlineEditableField>();
 const extraForm = reactive<Record<string, string>>({});
 const statusModalVisible = ref(false);
 const validModalVisible = ref(false);
@@ -596,6 +668,8 @@ const syncExtraForm = (extra: CustomerDetailData["extra"]) => {
 
 const syncLocalCustomer = (customer?: CustomerDetailData) => {
   localCustomer.value = customer ? { ...customer } : undefined;
+  editingField.value = undefined;
+  editingValue.value = "";
   syncExtraForm(customer?.extra);
 };
 
@@ -744,14 +818,42 @@ const getExtraPropertyOptions = (property: string) => {
   }));
 };
 
-const summaryItems = computed(() => [
+const summaryItems = computed<SummaryItem[]>(() => [
   { label: "跟进人", value: getFollowerName(localCustomer.value?.userId) },
   { label: "渠道来源", value: getChannelName(localCustomer.value?.channelId) },
   { label: "所属部门", value: getDepartmentName(localCustomer.value?.deptId) },
   { label: "所在城市", value: localCustomer.value?.city || "-" },
-  { label: "需求金额", value: formatAmount(localCustomer.value?.moneyDemand) },
-  { label: "年龄", value: formatAmount(localCustomer.value?.age) }
+  {
+    label: "需求金额",
+    value: formatAmount(localCustomer.value?.moneyDemand),
+    editable: true,
+    field: "moneyDemand",
+    inputType: "number"
+  },
+  {
+    label: "年龄",
+    value: formatAmount(localCustomer.value?.age),
+    editable: true,
+    field: "age",
+    inputType: "number",
+    precision: 0
+  }
 ]);
+
+const editingNumberValue = computed<number | undefined>({
+  get: () => {
+    const value = editingValue.value;
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? undefined : numericValue;
+  },
+  set: value => {
+    editingValue.value = value === undefined || value === null ? "" : String(value);
+  }
+});
 
 const scrollMessagesToBottom = () => {
   nextTick(() => {
@@ -783,7 +885,7 @@ const refreshCustomerDetail = async () => {
 const saveCustomerPatch = async (patch: CustomerDetailData, fieldKey: string, successText: string) => {
   if (!localCustomer.value?.id) {
     Message.error("客户信息不存在");
-    return;
+    return false;
   }
 
   const previousCustomer = localCustomer.value ? { ...localCustomer.value } : undefined;
@@ -794,12 +896,101 @@ const saveCustomerPatch = async (patch: CustomerDetailData, fieldKey: string, su
     await updateSysCustomer(localCustomer.value);
     await refreshCustomerDetail();
     Message.success(successText);
+    return true;
   } catch (error) {
     console.error(`更新${fieldKey}失败:`, error);
     syncLocalCustomer(previousCustomer);
     Message.error(`${successText}失败`);
+    return false;
   } finally {
     savingField.value = "";
+  }
+};
+
+const startInlineEdit = (field: InlineEditableField) => {
+  if (!localCustomer.value?.id || savingField.value) {
+    return;
+  }
+
+  editingField.value = field;
+  editingValue.value = localCustomer.value[field] === undefined || localCustomer.value[field] === null ? "" : String(localCustomer.value[field]);
+
+  nextTick(() => {
+    inlineEditInputRef.value?.focus?.();
+  });
+};
+
+const cancelInlineEdit = () => {
+  editingField.value = undefined;
+  editingValue.value = "";
+};
+
+const getInlineEditSuccessText = (field: InlineEditableField) => {
+  if (field === "name") return "姓名更新";
+  if (field === "moneyDemand") return "需求金额更新";
+  return "年龄更新";
+};
+
+const getInlineEditPatchValue = (field: InlineEditableField) => {
+  const rawValue = editingValue.value ?? "";
+
+  if (field === "name") {
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      Message.warning("请输入客户姓名");
+      return { valid: false as const };
+    }
+    return { valid: true as const, value: trimmedValue };
+  }
+
+  if (rawValue === "") {
+    cancelInlineEdit();
+    return { valid: false as const };
+  }
+
+  const numericValue = Number(rawValue);
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
+    Message.warning(field === "age" ? "请输入正确的年龄" : "请输入正确的需求金额");
+    return { valid: false as const };
+  }
+
+  if (field === "age" && !Number.isInteger(numericValue)) {
+    Message.warning("年龄必须为整数");
+    return { valid: false as const };
+  }
+
+  return { valid: true as const, value: numericValue };
+};
+
+const submitInlineEdit = async (field: InlineEditableField) => {
+  if (editingField.value !== field || inlineEditSubmittingField.value === field) {
+    return;
+  }
+
+  const patchValue = getInlineEditPatchValue(field);
+  if (!patchValue.valid) {
+    return;
+  }
+
+  const nextValue = patchValue.value;
+  const currentValue = localCustomer.value?.[field];
+  const hasChanged =
+    field === "name" ? String(currentValue ?? "").trim() !== String(nextValue) : Number(currentValue ?? 0) !== Number(nextValue);
+
+  if (!hasChanged) {
+    cancelInlineEdit();
+    return;
+  }
+
+  inlineEditSubmittingField.value = field;
+
+  try {
+    const saved = await saveCustomerPatch({ [field]: nextValue }, field, getInlineEditSuccessText(field));
+    if (saved) {
+      cancelInlineEdit();
+    }
+  } finally {
+    inlineEditSubmittingField.value = undefined;
   }
 };
 
@@ -1488,12 +1679,54 @@ watch(
   flex-wrap: wrap;
 }
 
+.editable-field {
+  min-width: 0;
+}
+
+.editable-field--name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .customer-name {
   color: #1d2129;
   font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
   word-break: break-word;
+}
+
+.editable-field__value {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.editable-field__value:hover {
+  color: #165dff;
+}
+
+.editable-field__action {
+  color: #86909c;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.editable-field__action:hover,
+.editable-field--active .editable-field__action {
+  color: #165dff;
+}
+
+.inline-edit-input {
+  width: 100%;
+}
+
+.inline-edit-input--name {
+  width: min(260px, 100%);
 }
 
 .customer-sex {
@@ -1543,6 +1776,12 @@ watch(
   font-size: 14px;
   font-weight: 600;
   word-break: break-word;
+}
+
+.editable-field--summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .qualification-grid {
