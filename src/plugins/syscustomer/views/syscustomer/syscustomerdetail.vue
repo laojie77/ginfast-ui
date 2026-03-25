@@ -24,7 +24,7 @@
                   :color="getStatusColor(localCustomer?.status)"
                   :class="['dropdown-tag', getStatusDisplayText().length > 20 ? 'multiline' : '']"
                 >
-                  {{ getStatusDisplayText() }}
+                  业务阶段：{{ getStatusDisplayText() }}
                 </a-tag>
               </a-tooltip>
               <template #content>
@@ -46,7 +46,7 @@
                   :color="getIntentionColor(localCustomer?.intention)"
                   :class="['dropdown-tag', getIntentionDisplayText().length > 20 ? 'multiline' : '']"
                 >
-                  {{ getIntentionDisplayText() }}
+                  客户状态：{{ getIntentionDisplayText() }}
                 </a-tag>
               </a-tooltip>
               <template #content>
@@ -64,7 +64,7 @@
             <a-dropdown @select="handleStarSelect">
               <a-tooltip :content="getStarText(localCustomer?.customerStar)" position="top">
                 <a-tag size="small" :color="getStarColor(localCustomer?.customerStar)" class="dropdown-tag">
-                  {{ getStarText(localCustomer?.customerStar) }}
+                  星级：{{ getStarText(localCustomer?.customerStar) }}
                 </a-tag>
               </a-tooltip>
               <template #content>
@@ -149,7 +149,13 @@
               <div class="panel-title">客户资质</div>
               <div class="qualification-grid">
                 <div v-for="property in ALL_EXTRA_PROPERTIES" :key="property" class="qualification-item">
-                  <div class="qualification-label">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
+                  <div class="qualification-item-head">
+                    <span
+                      class="qualification-card-dot"
+                      :class="{ 'qualification-card-dot-active': !!extraForm[property] }"
+                    ></span>
+                    <div class="qualification-label">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
+                  </div>
                   <a-select
                     :model-value="extraForm[property]"
                     :placeholder="`请选择${EXTRA_PROPERTY_LABELS[property]}`"
@@ -1549,6 +1555,25 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.qualification-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qualification-card-dot {
+  width: 8px;
+  height: 8px;
+  background: #c9cdd4;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(201, 205, 212, 0.18);
+}
+
+.qualification-card-dot-active {
+  background: linear-gradient(135deg, #165dff 0%, #36bffa 100%);
+  box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.08);
 }
 
 .qualification-label {

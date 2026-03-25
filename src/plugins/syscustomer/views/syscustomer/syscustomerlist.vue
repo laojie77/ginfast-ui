@@ -520,7 +520,10 @@
               <div class="qualification-card-grid">
                 <div v-for="property in ALL_EXTRA_PROPERTIES" :key="property" class="qualification-card">
                   <div class="qualification-card-head">
-                    <span class="qualification-card-dot"></span>
+                    <span
+                      class="qualification-card-dot"
+                      :class="{ 'qualification-card-dot-active': !!getExtraPropertyValue(property) }"
+                    ></span>
                     <div class="qualification-label">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
                   </div>
                   <a-select
@@ -710,6 +713,7 @@ import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
 import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
 import { formatTime, getDictOptionName } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
+import { verifyPhone } from "@/utils/verify-tools";
 import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
 import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../../syschannelcompany/api/syschannelcompany";
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid } from "@/api/customervalid";
@@ -1137,6 +1141,10 @@ const editingData = reactive<Partial<SysCustomerData>>({
   isLock: undefined
 });
 
+const normalizeEditingMobile = (value: unknown) => String(value ?? "").replace(/\s+/g, "");
+
+const isCompliantMobile = (value: unknown) => verifyPhone(normalizeEditingMobile(value));
+
 const rules = {
   name: [{ required: true, message: "请输入客户姓名" }],
   mobile: [{ required: true, message: "请输入手机号" }],
@@ -1416,7 +1424,7 @@ const buildExtraPayload = () => {
 
 const buildCreatePayload = (): SysCustomerCreateParams => ({
   name: getTrimmedString(editingData.name),
-  mobile: getTrimmedString(editingData.mobile) || "",
+  mobile: normalizeEditingMobile(editingData.mobile),
   moneyDemand: editingData.moneyDemand ?? 0,
   channelId: Number(editingData.channelId ?? 0),
   extra: buildExtraPayload(),
@@ -1431,7 +1439,7 @@ const buildCreatePayload = (): SysCustomerCreateParams => ({
 const buildUpdatePayload = (): SysCustomerUpdateParams => ({
   id: Number(editingData.id),
   name: getTrimmedString(editingData.name),
-  mobile: getTrimmedString(editingData.mobile) || "",
+  mobile: normalizeEditingMobile(editingData.mobile),
   moneyDemand: editingData.moneyDemand ?? 0,
   channelId: editingData.channelId != null ? Number(editingData.channelId) : undefined,
   customerStar: editingData.customerStar ?? null,
@@ -1447,8 +1455,16 @@ const buildUpdatePayload = (): SysCustomerUpdateParams => ({
 });
 
 const handleSave = async () => {
+  const normalizedMobile = normalizeEditingMobile(editingData.mobile);
+  editingData.mobile = normalizedMobile || undefined;
   const isValid = await formRef.value?.validate();
   if (isValid) return false;
+
+  if (!isCompliantMobile(normalizedMobile)) {
+    Message.error("请输入正确的11位手机号");
+    return false;
+  }
+
   try {
     // 只提交保存所需字段，避免把列表/详情字段一起带给接口
     if (editingData.id) {
@@ -2150,6 +2166,12 @@ onMounted(async () => {
 .qualification-card-dot {
   width: 8px;
   height: 8px;
+  background: #c9cdd4;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(201, 205, 212, 0.18);
+}
+
+.qualification-card-dot-active {
   background: linear-gradient(135deg, #165dff 0%, #36bffa 100%);
   border-radius: 999px;
   box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.08);
