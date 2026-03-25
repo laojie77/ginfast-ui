@@ -2,6 +2,8 @@ import { http } from "@/utils/http";
 import { baseUrlApi } from "@/api/utils";
 import type { BaseResult } from "@/api/types";
 
+export type CustomerListScene = "all" | "public" | "exchange" | "reassign" | "locked";
+
 export interface SysCustomerTraceData {
   id?: number | string;
   customerId?: number;
@@ -108,13 +110,16 @@ export type SysCustomerListResult = BaseResult<{
 export interface SysCustomerListParams {
   pageNum: number;
   pageSize: number;
+  scene?: CustomerListScene;
   num?: string;
   id?: number;
   name?: string;
   mobile?: string;
   mdMobile?: string;
   moneyDemand?: number;
+  channelId?: number;
   channelName?: number;
+  userId?: number;
   userName?: number;
   customerStar?: number | null;
   status?: number;

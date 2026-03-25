@@ -719,8 +719,9 @@ import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../.
 import { getCustomerValidList, createCustomerValid, updateCustomerValid, deleteCustomerValid } from "@/api/customervalid";
 import type { CustomerValidData, CustomerValidCreateParams, CustomerValidUpdateParams } from "@/api/customervalid";
 import SysCustomerDetail from "./syscustomerdetail.vue";
-import { formatCustomerRemarkDisplay } from "./remark";
-import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "./status-trace";
+import { buildCustomerListParams, createCustomerSearchForm, resetCustomerSearchForm } from "../../hooks/list-query.ts";
+import { formatCustomerRemarkDisplay } from "../../hooks/remark.ts";
+import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
@@ -729,6 +730,7 @@ import { getDivisionAPI, type DivisionItem } from "@/api/department"; //部门�
 import { getAccountListAPI, type AccountItem } from "@/api/user"; //用户列表数据
 import { useSysConfigStore } from "@/store/modules/sys-config"; // 系统配置store
 const userInfo = getLocalStorage<userType>(UserInfoKey);
+const listScene = "my" as const;
 
 // Extra字段属性定义常量
 const EXTRA_PROPERTIES = {
@@ -1051,26 +1053,7 @@ const selectedCustomerId = ref<number>();
 const selectedCustomerData = ref<SysCustomerData>();
 
 // 搜索表单
-const searchForm = reactive({
-  num: "",
-  name: "",
-  mobile: "",
-  moneyDemand: undefined,
-  channelId: undefined,
-  userId: undefined,
-  customerStar: undefined,
-  status: undefined,
-  intention: undefined,
-  singlePieceType: undefined,
-  allotTime: "",
-  deptId: undefined,
-  city: "",
-  isReassign: undefined,
-  isQuit: undefined,
-  isRepeat: undefined,
-  starStatus: undefined,
-  isLock: undefined
-});
+const searchForm = reactive(createCustomerSearchForm());
 
 // 监听部门选择变化，更新跟进人列表
 watch(
@@ -1171,64 +1154,7 @@ const commentExpandedKeys = computed(() =>
 
 // 获取数据列表
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
-  const params: any = {
-    pageNum,
-    pageSize: pageSizeVal
-  };
-  if (searchForm.num) {
-    params.num = searchForm.num;
-  }
-  if (searchForm.name) {
-    params.name = searchForm.name;
-  }
-  if (searchForm.mobile) {
-    params.mobile = searchForm.mobile;
-  }
-  if (searchForm.moneyDemand) {
-    params.moneyDemand = searchForm.moneyDemand;
-  }
-  if (searchForm.channelId) {
-    params.channelId = searchForm.channelId;
-  }
-  if (searchForm.userId) {
-    params.userId = searchForm.userId;
-  }
-  if (searchForm.customerStar) {
-    params.customerStar = searchForm.customerStar;
-  }
-  if (searchForm.status) {
-    params.status = searchForm.status;
-  }
-  if (searchForm.intention) {
-    params.intention = searchForm.intention;
-  }
-  if (searchForm.singlePieceType) {
-    params.singlePieceType = searchForm.singlePieceType;
-  }
-  if (searchForm.allotTime) {
-    params.allotTime = searchForm.allotTime;
-  }
-  if (searchForm.deptId) {
-    params.deptId = searchForm.deptId;
-  }
-  if (searchForm.city) {
-    params.city = searchForm.city;
-  }
-  if (searchForm.isReassign) {
-    params.isReassign = searchForm.isReassign;
-  }
-  if (searchForm.isQuit) {
-    params.isQuit = searchForm.isQuit;
-  }
-  if (searchForm.isRepeat) {
-    params.isRepeat = searchForm.isRepeat;
-  }
-  if (searchForm.starStatus) {
-    params.starStatus = searchForm.starStatus;
-  }
-  if (searchForm.isLock) {
-    params.isLock = searchForm.isLock;
-  }
+  const params = buildCustomerListParams(searchForm, { pageNum, pageSize: pageSizeVal }, listScene);
   await fetchDataList(params);
 };
 
@@ -1249,24 +1175,7 @@ const handleSearch = () => {
 
 // 重置搜索
 const handleReset = () => {
-  searchForm.num = "";
-  searchForm.name = "";
-  searchForm.mobile = "";
-  searchForm.moneyDemand = undefined;
-  searchForm.channelId = undefined;
-  searchForm.userId = undefined;
-  searchForm.customerStar = undefined;
-  searchForm.status = undefined;
-  searchForm.intention = undefined;
-  searchForm.singlePieceType = undefined;
-  searchForm.allotTime = "";
-  searchForm.deptId = undefined;
-  searchForm.city = "";
-  searchForm.isReassign = undefined;
-  searchForm.isQuit = undefined;
-  searchForm.isRepeat = undefined;
-  searchForm.starStatus = undefined;
-  searchForm.isLock = undefined;
+  resetCustomerSearchForm(searchForm);
   resetSearchParams();
   loadData(1);
 };

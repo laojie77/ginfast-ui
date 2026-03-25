@@ -483,8 +483,8 @@ import {
   type SysCustomerStatusTraceUpdateParams
 } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
-import { formatRemarkDisplay } from "./remark";
-import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "./status-trace";
+import { formatRemarkDisplay } from "../../hooks/remark.ts";
+import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
 
 import {
   createSysCustomerTraces,
