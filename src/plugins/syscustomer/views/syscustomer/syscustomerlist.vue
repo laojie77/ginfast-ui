@@ -772,7 +772,7 @@ const CUSTOMER_EXTRA_OPTIONS = computed(() => sysConfigStore.customerExtraConfig
 // 数据权限判断函数
 const getDataPermissionInfo = () => {
   const userRoles = userInfo?.roles || [];
-  const userDeptId = userInfo?.department;
+  const userDeptId = userInfo?.department.id;
 
   // 检查是否有超级管理员权限 (dataScope=1)
   const hasSuperAdmin = userRoles.some(role => role.createdBy === 1 && role.dataScope === 1);
@@ -833,7 +833,6 @@ const getDataPermissionInfo = () => {
         break;
     }
   }
-
   return {
     hasFullPermission: false,
     allowedDeptIds: Array.from(allowedDeptIds),
@@ -854,6 +853,7 @@ const getDataPermissionInfo = () => {
 
 // 部门树数据
 const departmentTree = ref<DivisionItem[]>([]);
+const departmentTreeLoaded = ref(false);
 
 // 跟进人列表数据
 const followerOptions = ref<{ value: number; name: string }[]>([]);
@@ -866,6 +866,8 @@ const getDepartmentTree = async () => {
   } catch (error) {
     console.error("获取部门数据失败:", error);
     departmentTree.value = [];
+  } finally {
+    departmentTreeLoaded.value = true;
   }
 };
 
@@ -881,12 +883,10 @@ const getFollowerListByDepartment = async (departmentIds: number[]) => {
         pageNum: 1,
         pageSize: 100
       };
-
       // 添加部门ID参数
       departmentIds.forEach((deptId, index) => {
         params[`deptIds[${index}]`] = deptId;
       });
-
       response = await getAccountListAPI(params);
     } else {
       // 直接调用API，不传任何参数，获取全部员工
@@ -1059,8 +1059,10 @@ const searchForm = reactive(createCustomerSearchForm());
 
 // 监听部门选择变化，更新跟进人列表
 watch(
-  () => searchForm.deptId,
-  async newDeptId => {
+  [() => searchForm.deptId, () => departmentTreeLoaded.value],
+  async ([newDeptId, isDepartmentTreeLoaded]) => {
+    if (!isDepartmentTreeLoaded) return;
+
     if (newDeptId) {
       // 选择了具体部门：加载该部门的员工列表
       const deptId = Array.isArray(newDeptId) ? newDeptId[newDeptId.length - 1] : newDeptId;
@@ -1068,7 +1070,7 @@ watch(
     } else {
       // 没有选择部门：根据数据权限加载员工列表
       const permissionInfo = getDataPermissionInfo();
-
+      console.log(permissionInfo);
       if (permissionInfo.hasFullPermission) {
         // 负责人显示全部员工，不传部门ID参数
         await getFollowerListByDepartment([]);
