@@ -42,8 +42,8 @@
               <a-form-item field="userId" label="跟进人">
                 <a-select v-model="searchForm.userId" placeholder="请选择跟进人" allow-clear>
                   <a-option v-for="item in followerOptions" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -52,8 +52,8 @@
               <a-form-item field="customerStar" label="星级">
                 <a-select v-model="searchForm.customerStar" placeholder="星级" allow-clear>
                   <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -70,8 +70,8 @@
               <a-form-item field="intention" label="客户有效">
                 <a-select v-model="searchForm.intention" placeholder="客户有效" allow-clear>
                   <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -80,8 +80,8 @@
               <a-form-item field="singlePieceType" label="贷款类型">
                 <a-select v-model="searchForm.singlePieceType" placeholder="贷款类型" allow-clear>
                   <a-option v-for="item in singlePieceTypeOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -108,8 +108,8 @@
               <a-form-item field="isReassign" label="再分配">
                 <a-select v-model="searchForm.isReassign" placeholder="再分配" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -118,8 +118,8 @@
               <a-form-item field="isQuit" label="离职数据">
                 <a-select v-model="searchForm.isQuit" placeholder="离职数据" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -128,8 +128,8 @@
               <a-form-item field="isRepeat" label="重复标记">
                 <a-select v-model="searchForm.isRepeat" placeholder="重复标记" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -138,8 +138,8 @@
               <a-form-item field="starStatus" label="星级回传">
                 <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
                   <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -148,8 +148,8 @@
               <a-form-item field="isLock" label="是否锁定">
                 <a-select v-model="searchForm.isLock" placeholder="是否锁定" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                    item.name
-                  }}</a-option>
+                      item.name
+                    }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -306,7 +306,7 @@
             </a-table-column>
             <a-table-column title="分配时间" data-index="allotTime" :width="200" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ record["allotTime"] ? formatTime(record["allotTime"]) : "" }}
+                {{ record["allotTime"] ? formatTime(record["allotTime"]) : "-" }}
               </template>
             </a-table-column>
             <a-table-column title="所属部门" data-index="deptId" :width="100" ellipsis tooltip>
@@ -382,69 +382,178 @@
       <!-- 编辑/创建弹窗 -->
       <a-modal
         v-model:visible="modalVisible"
-        :title="editingData.id ? '编辑数据' : '新增数据'"
+        :title="editingData.id ? '编辑客户' : '新建客户'"
         :on-before-ok="handleSave"
         @cancel="handleCancel"
-        :width="layoutMode.width"
+        :width="isMobile ? '95%' : '760px'"
       >
-        <a-form :model="editingData" :rules="rules" ref="formRef" :layout="layoutMode.layout">
-          <a-form-item field="name" label="客户姓名"
-            ><a-input v-model="editingData.name" placeholder="请输入客户姓名" />
-          </a-form-item>
-          <a-form-item field="mobile" label="手机号"
-            ><a-input v-model="editingData.mobile" placeholder="请输入手机号" />
-          </a-form-item>
-          <a-form-item field="moneyDemand" label="需求金额">
-            <a-input-number v-model="editingData.moneyDemand" placeholder="请输入需求金额" />
-          </a-form-item>
-          <a-form-item field="channelId" label="渠道来源">
-            <a-select v-model="editingData.channelId" placeholder="请选择渠道来源">
-              <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item field="customerStar" label="星级">
-            <a-select v-model="editingData.customerStar" placeholder="请选择星级">
-              <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                item.name
-              }}</a-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item field="status" label="业务阶段">
-            <a-select v-model="editingData.status" placeholder="请选择业务阶段">
-              <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item field="intention" label="客户有效">
-            <a-select v-model="editingData.intention" placeholder="请选择客户有效">
-              <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item label="客户资质">
-            <a-space direction="vertical" style="width: 100%">
-              <div v-for="property in ALL_EXTRA_PROPERTIES" :key="property" style="margin-bottom: 16px">
-                <div style="margin-bottom: 8px; font-weight: 500">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
-                <a-select
-                  :model-value="getExtraPropertyValue(property)"
-                  @update:model-value="value => setExtraPropertyValue(property, value)"
-                  :placeholder="`请选择${EXTRA_PROPERTY_LABELS[property]}`"
-                  allow-clear
-                >
-                  <a-option v-for="(label, value) in CUSTOMER_EXTRA_OPTIONS[property] || {}" :key="value" :value="value">
-                    {{ label }}
-                  </a-option>
-                </a-select>
+        <div class="customer-editor">
+          <div class="editor-hero">
+            <div class="editor-hero-main">
+              <div class="editor-avatar">
+                {{ editingData.name ? editingData.name.trim().charAt(0) : editingData.id ? "客" : "新" }}
               </div>
-            </a-space>
-          </a-form-item>
-          <a-form-item field="sex" label="性别">
-            <a-radio-group v-model="editingData.sex">
-              <a-radio v-for="item in sexOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
-            </a-radio-group>
-          </a-form-item>
-          <a-form-item field="age" label="年龄">
-            <a-input-number v-model="editingData.age" placeholder="请输入年龄" />
-          </a-form-item>
-        </a-form>
+              <div class="editor-hero-copy">
+                <div class="editor-hero-title">
+                  {{ editingData.id ? editingData.name || "编辑客户资料" : "录入新客户" }}
+                </div>
+                <div class="editor-hero-subtitle">
+                  {{ editingData.id ? "调整客户基础信息与跟进状态，保持线索资料完整。" : "先补齐基础信息，再进入后续分配与跟进流程。" }}
+                </div>
+                <div class="editor-hero-tags">
+                  <a-tag size="small" color="arcoblue">
+                    {{ editingData.id ? `客户编号 ${editingData.num || "-"}` : "创建后自动生成客户编号" }}
+                  </a-tag>
+                  <a-tag size="small" :color="editingData.customerStar != null ? getCustomerStarTagColor(Number(editingData.customerStar)) : ''">
+                    {{ getCustomerStarOptionName(editingData.customerStar != null ? Number(editingData.customerStar) : null) || "未定级" }}
+                  </a-tag>
+                  <a-tag
+                    size="small"
+                    :color="
+                      editingData.intention === 1
+                        ? 'green'
+                        : editingData.intention === 2
+                          ? 'red'
+                          : editingData.intention === 3
+                            ? 'orange'
+                            : ''
+                    "
+                  >
+                    {{ getOptionName(intentionOption, editingData.intention) || "客户有效待确认" }}
+                  </a-tag>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <a-form :model="editingData" :rules="rules" ref="formRef" layout="vertical" class="editor-form">
+            <section class="editor-section">
+              <div class="editor-section-head">
+                <div class="editor-section-title">基础信息</div>
+              </div>
+              <a-row :gutter="[12, 4]" class="editor-fields-row">
+                <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
+                  <a-form-item field="name" label="客户姓名">
+                    <a-input v-model="editingData.name" placeholder="请输入客户姓名" allow-clear size="large" />
+                  </a-form-item>
+                </a-col>
+                <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
+                  <a-form-item field="mobile" label="手机号">
+                    <a-input v-model="editingData.mobile" placeholder="请输入手机号" allow-clear size="large" />
+                  </a-form-item>
+                </a-col>
+                <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
+                  <a-form-item field="channelId" label="渠道来源">
+                    <a-select v-model="editingData.channelId" placeholder="请选择渠道来源" allow-clear size="large">
+                      <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                    </a-select>
+                  </a-form-item>
+                </a-col>
+                <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
+                  <a-form-item field="moneyDemand" label="需求金额">
+                    <a-input-number
+                      v-model="editingData.moneyDemand"
+                      placeholder="请输入需求金额"
+                      hide-button
+                      :min="0"
+                      class="editor-number-input"
+                    />
+                  </a-form-item>
+                </a-col>
+                <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
+                  <a-form-item field="age" label="年龄">
+                    <a-input-number
+                      v-model="editingData.age"
+                      placeholder="请输入年龄"
+                      hide-button
+                      :min="0"
+                      class="editor-number-input"
+                    />
+                  </a-form-item>
+                </a-col>
+
+              </a-row>
+            </section>
+
+            <section class="editor-section editor-section-tight">
+              <div class="editor-section-head">
+                <div class="editor-section-title">跟进状态</div>
+              </div>
+              <div class="editor-status-grid">
+                <div class="editor-status-card">
+                  <a-form-item field="customerStar" label="客户星级" class="editor-compact-item">
+                    <a-select v-model="editingData.customerStar" placeholder="请选择客户星级" allow-clear>
+                      <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
+                          item.name
+                        }}</a-option>
+                    </a-select>
+                  </a-form-item>
+                </div>
+                <div class="editor-status-card">
+                  <a-form-item field="status" label="业务阶段" class="editor-compact-item">
+                    <a-select v-model="editingData.status" placeholder="请选择业务阶段" allow-clear>
+                      <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                    </a-select>
+                  </a-form-item>
+                </div>
+                <div class="editor-status-card">
+                  <a-form-item field="intention" label="客户有效" class="editor-compact-item">
+                    <a-select v-model="editingData.intention" placeholder="请选择客户有效状态" allow-clear>
+                      <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                    </a-select>
+                  </a-form-item>
+                </div>
+                <div class="editor-status-card">
+                  <a-form-item field="sex" label="性别" class="editor-compact-item">
+                    <a-radio-group v-model="editingData.sex" class="editor-radio-group editor-radio-group-compact">
+                      <a-radio v-for="item in sexOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-radio>
+                    </a-radio-group>
+                  </a-form-item>
+                </div>
+              </div>
+            </section>
+
+            <section class="editor-section editor-section-tight">
+              <div class="editor-section-head">
+                <div class="editor-section-title">客户资质</div>
+              </div>
+              <div class="qualification-card-grid">
+                <div v-for="property in ALL_EXTRA_PROPERTIES" :key="property" class="qualification-card">
+                  <div class="qualification-card-head">
+                    <span class="qualification-card-dot"></span>
+                    <div class="qualification-label">{{ EXTRA_PROPERTY_LABELS[property] }}</div>
+                  </div>
+                  <a-select
+                    class="qualification-select"
+                    :model-value="getExtraPropertyValue(property)"
+                    @update:model-value="(value: string | number | boolean | undefined) => setExtraPropertyValue(property, value == null ? '' : String(value))"
+                    :placeholder="`请选择${EXTRA_PROPERTY_LABELS[property]}`"
+                    allow-clear
+                  >
+                    <a-option v-for="(label, value) in CUSTOMER_EXTRA_OPTIONS[property] || {}" :key="value" :value="value">
+                      {{ label }}
+                    </a-option>
+                  </a-select>
+                </div>
+              </div>
+            </section>
+
+            <section class="editor-section">
+              <div class="editor-section-head">
+                <div class="editor-section-title">备注信息</div>
+              </div>
+              <a-form-item field="remarks"  class="editor-remark-field">
+                <a-textarea
+                  v-model="editingData.remarks"
+                  placeholder="请输入客户备注、需求背景或需要提醒的事项"
+                  :auto-size="{ minRows: 4, maxRows: 6 }"
+                  :max-length="300"
+                  show-word-limit
+                />
+              </a-form-item>
+            </section>
+          </a-form>
+        </div>
       </a-modal>
 
       <!-- 状态更新弹窗 -->
@@ -457,7 +566,7 @@
       >
         <a-form :model="statusUpdateForm" ref="statusFormRef">
           <a-form-item label="新状态">
-            <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus)">
+            <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus ?? 0)">
               {{ statusOption.find(item => Number(item.value) === statusUpdateForm.newStatus)?.name }}
             </a-tag>
           </a-form-item>
@@ -482,7 +591,7 @@
             @click="handleManageValid"
             style="color: #165dff"
             v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-            >管理</a-button
+          >管理</a-button
           >
         </div>
         <a-form :model="validUpdateForm" ref="validFormRef">
@@ -1896,6 +2005,291 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+.customer-editor {
+  --editor-border: rgba(15, 35, 95, 0.08);
+  --editor-shadow: 0 18px 40px rgba(15, 35, 95, 0.08);
+  --editor-soft-bg: linear-gradient(135deg, #f4f8ff 0%, #f7fafc 55%, #eef5ff 100%);
+  --editor-title: #1d2129;
+  --editor-text: #4e5969;
+  --editor-muted: #86909c;
+  --editor-accent: #165dff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.editor-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--editor-soft-bg);
+  border: 1px solid rgba(22, 93, 255, 0.08);
+  border-radius: 16px;
+}
+
+.editor-hero-main {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.editor-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f766e 100%);
+  border-radius: 16px;
+  box-shadow: 0 10px 18px rgba(29, 78, 216, 0.18);
+}
+
+.editor-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.editor-hero-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--editor-title);
+}
+
+.editor-hero-subtitle {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--editor-text);
+}
+
+.editor-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editor-section {
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--editor-border);
+  border-radius: 14px;
+  box-shadow: var(--editor-shadow);
+}
+
+.editor-section-tight {
+  padding: 12px;
+}
+
+.editor-section-head {
+  margin-bottom: 8px;
+}
+
+.editor-section-title {
+  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--editor-title);
+}
+
+.editor-section-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--editor-muted);
+}
+
+.editor-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.editor-status-card {
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #fcfdff 0%, #f6f9ff 100%);
+  border: 1px solid rgba(22, 93, 255, 0.08);
+  border-radius: 12px;
+}
+
+.qualification-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.qualification-card {
+  padding: 10px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f7faff 100%);
+  border: 1px solid rgba(22, 93, 255, 0.08);
+  border-radius: 12px;
+}
+
+.qualification-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.qualification-card-dot {
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #165dff 0%, #36bffa 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.08);
+}
+
+.qualification-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--editor-text);
+}
+
+.editor-compact-item {
+  margin-bottom: 0;
+}
+
+.editor-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-height: 40px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #d9dee8;
+  border-radius: 12px;
+}
+
+.editor-radio-group-compact {
+  min-height: 36px;
+  padding: 6px 8px;
+}
+
+.editor-number-input {
+  width: 100%;
+}
+
+.editor-remark-field {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.customer-editor :deep(.arco-form-item) {
+  margin-bottom: 12px;
+}
+
+.customer-editor :deep(.arco-form-item:last-child) {
+  margin-bottom: 0;
+}
+
+.customer-editor :deep(.arco-form-item-label-col > label) {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--editor-text);
+}
+
+.customer-editor :deep(.editor-compact-item .arco-form-item-content-flex) {
+  gap: 6px;
+}
+
+.customer-editor :deep(.editor-status-card .arco-select-view),
+.customer-editor :deep(.qualification-select .arco-select-view) {
+  background: #fff;
+}
+
+.customer-editor :deep(.editor-status-card .arco-input-number),
+.customer-editor :deep(.editor-status-card .arco-select-view),
+.customer-editor :deep(.qualification-select .arco-select-view) {
+  min-height: 36px;
+}
+
+.customer-editor :deep(.arco-input-wrapper),
+.customer-editor :deep(.arco-input-number),
+.customer-editor :deep(.arco-select-view),
+.customer-editor :deep(.arco-textarea-wrapper) {
+  border-radius: 12px;
+}
+
+.customer-editor :deep(.arco-input-wrapper),
+.customer-editor :deep(.arco-input-number),
+.customer-editor :deep(.arco-select-view),
+.customer-editor :deep(.arco-textarea-wrapper),
+.customer-editor :deep(.arco-picker) {
+  border-color: #d9dee8;
+  transition: all 0.2s ease;
+}
+
+.customer-editor :deep(.arco-input-wrapper:hover),
+.customer-editor :deep(.arco-input-number:hover),
+.customer-editor :deep(.arco-select-view:hover),
+.customer-editor :deep(.arco-textarea-wrapper:hover) {
+  border-color: rgba(22, 93, 255, 0.45);
+}
+
+.customer-editor :deep(.arco-input-wrapper:focus-within),
+.customer-editor :deep(.arco-input-number:focus-within),
+.customer-editor :deep(.arco-select-view.arco-select-view-focus),
+.customer-editor :deep(.arco-textarea-wrapper:focus-within) {
+  border-color: var(--editor-accent);
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
+}
+
+.customer-editor :deep(.arco-textarea-wrapper textarea) {
+  line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .customer-editor {
+    max-width: none;
+    gap: 14px;
+  }
+
+  .editor-hero,
+  .editor-section {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .editor-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .editor-hero-title {
+    font-size: 18px;
+  }
+
+  .editor-status-grid,
+  .qualification-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qualification-card {
+    padding: 12px;
+  }
+
+  .qualification-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .dropdown-tag {
   cursor: pointer;
   display: inline-block;
