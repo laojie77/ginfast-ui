@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="snow-page">
     <div class="snow-inner">
       <a-card :loading="loading" :bordered="false">
@@ -42,8 +42,8 @@
               <a-form-item field="userId" label="跟进人">
                 <a-select v-model="searchForm.userId" placeholder="请选择跟进人" allow-clear>
                   <a-option v-for="item in followerOptions" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -52,8 +52,8 @@
               <a-form-item field="customerStar" label="星级">
                 <a-select v-model="searchForm.customerStar" placeholder="星级" allow-clear>
                   <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -70,8 +70,8 @@
               <a-form-item field="intention" label="客户有效">
                 <a-select v-model="searchForm.intention" placeholder="客户有效" allow-clear>
                   <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -80,8 +80,8 @@
               <a-form-item field="singlePieceType" label="贷款类型">
                 <a-select v-model="searchForm.singlePieceType" placeholder="贷款类型" allow-clear>
                   <a-option v-for="item in singlePieceTypeOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -108,8 +108,8 @@
               <a-form-item field="isReassign" label="再分配">
                 <a-select v-model="searchForm.isReassign" placeholder="再分配" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -118,8 +118,8 @@
               <a-form-item field="isQuit" label="离职数据">
                 <a-select v-model="searchForm.isQuit" placeholder="离职数据" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -128,8 +128,8 @@
               <a-form-item field="isRepeat" label="重复标记">
                 <a-select v-model="searchForm.isRepeat" placeholder="重复标记" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -138,21 +138,21 @@
               <a-form-item field="starStatus" label="星级回传">
                 <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
                   <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
-<!--            <a-col :span="isMobile ? 12 : 3">-->
-<!--              &lt;!&ndash; 是否锁定选择框查询（radio/select/checkbox统一使用select） &ndash;&gt;-->
-<!--              <a-form-item field="isLock" label="是否锁定">-->
-<!--                <a-select v-model="searchForm.isLock" placeholder="是否锁定" allow-clear>-->
-<!--                  <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{-->
-<!--                      item.name-->
-<!--                    }}</a-option>-->
-<!--                </a-select>-->
-<!--              </a-form-item>-->
-<!--            </a-col>-->
+            <!--            <a-col :span="isMobile ? 12 : 3">-->
+            <!--              &lt;!&ndash; 是否锁定选择框查询（radio/select/checkbox统一使用select） &ndash;&gt;-->
+            <!--              <a-form-item field="isLock" label="是否锁定">-->
+            <!--                <a-select v-model="searchForm.isLock" placeholder="是否锁定" allow-clear>-->
+            <!--                  <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{-->
+            <!--                      item.name-->
+            <!--                    }}</a-option>-->
+            <!--                </a-select>-->
+            <!--              </a-form-item>-->
+            <!--            </a-col>-->
           </a-row>
           <a-row>
             <a-col :span="24">
@@ -213,9 +213,9 @@
               </template>
             </a-table-column>
             <a-table-column title="手机号" data-index="mobile" :width="150" ellipsis tooltip />
-            <a-table-column title="业务阶段" data-index="status" :width="200">
+            <a-table-column title="业务阶段" data-index="status" :width="150">
               <template #cell="{ record }">
-                <a-dropdown @select="value => handleStatusChange(record, value)">
+                <a-dropdown @select="(value: string | number) => handleStatusChange(record, Number(value))">
                   <a-tooltip :content="getStatusDisplayText(record)" position="top">
                     <a-tag
                       size="small"
@@ -240,7 +240,7 @@
             </a-table-column>
             <a-table-column title="客户有效" data-index="intention" :width="200">
               <template #cell="{ record }">
-                <a-dropdown @select="value => handleIntentionChange(record, value)">
+                <a-dropdown @select="(value: string | number) => handleIntentionChange(record, Number(value))">
                   <a-tooltip :content="getIntentionDisplayText(record)" position="top">
                     <a-tag
                       size="small"
@@ -267,7 +267,7 @@
             </a-table-column>
             <a-table-column title="星级" data-index="customerStar" :width="120">
               <template #cell="{ record }">
-                <a-dropdown @select="value => handleCustomerStarChange(record, value)">
+                <a-dropdown @select="(value: string | number) => handleCustomerStarChange(record, Number(value))">
                   <a-tooltip :content="getCustomerStarDisplayText(record)" position="top">
                     <a-tag size="small" :color="getCustomerStarTagColor(record.customerStar)" class="dropdown-tag">
                       {{ getCustomerStarDisplayText(record) }}
@@ -409,14 +409,24 @@
                   {{ editingData.id ? editingData.name || "编辑客户资料" : "录入新客户" }}
                 </div>
                 <div class="editor-hero-subtitle">
-                  {{ editingData.id ? "调整客户基础信息与跟进状态，保持线索资料完整。" : "先补齐基础信息，再进入后续分配与跟进流程。" }}
+                  {{
+                    editingData.id
+                      ? "调整客户基础信息与跟进状态，保持线索资料完整。"
+                      : "先补齐基础信息，再进入后续分配与跟进流程。"
+                  }}
                 </div>
                 <div class="editor-hero-tags">
                   <a-tag size="small" color="arcoblue">
                     {{ editingData.id ? `客户编号 ${editingData.num || "-"}` : "创建后自动生成客户编号" }}
                   </a-tag>
-                  <a-tag size="small" :color="editingData.customerStar != null ? getCustomerStarTagColor(Number(editingData.customerStar)) : ''">
-                    {{ getCustomerStarOptionName(editingData.customerStar != null ? Number(editingData.customerStar) : null) || "未定级" }}
+                  <a-tag
+                    size="small"
+                    :color="editingData.customerStar != null ? getCustomerStarTagColor(Number(editingData.customerStar)) : ''"
+                  >
+                    {{
+                      getCustomerStarOptionName(editingData.customerStar != null ? Number(editingData.customerStar) : null) ||
+                      "未定级"
+                    }}
                   </a-tag>
                   <a-tag
                     size="small"
@@ -456,7 +466,9 @@
                 <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
                   <a-form-item field="channelId" label="渠道来源">
                     <a-select v-model="editingData.channelId" placeholder="请选择渠道来源" allow-clear size="large">
-                      <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                      <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -482,7 +494,6 @@
                     />
                   </a-form-item>
                 </a-col>
-
               </a-row>
             </section>
 
@@ -495,22 +506,26 @@
                   <a-form-item field="customerStar" label="客户星级" class="editor-compact-item">
                     <a-select v-model="editingData.customerStar" placeholder="请选择客户星级" allow-clear>
                       <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
                 <div class="editor-status-card">
                   <a-form-item field="status" label="业务阶段" class="editor-compact-item">
                     <a-select v-model="editingData.status" placeholder="请选择业务阶段" allow-clear>
-                      <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                      <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
                 <div class="editor-status-card">
                   <a-form-item field="intention" label="客户有效" class="editor-compact-item">
                     <a-select v-model="editingData.intention" placeholder="请选择客户有效状态" allow-clear>
-                      <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                      <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -540,7 +555,10 @@
                   <a-select
                     class="qualification-select"
                     :model-value="getExtraPropertyValue(property)"
-                    @update:model-value="(value: string | number | boolean | undefined) => setExtraPropertyValue(property, value == null ? '' : String(value))"
+                    @update:model-value="
+                      (value: string | number | boolean | undefined) =>
+                        setExtraPropertyValue(property, value == null ? '' : String(value))
+                    "
                     :placeholder="`请选择${EXTRA_PROPERTY_LABELS[property]}`"
                     allow-clear
                   >
@@ -556,7 +574,7 @@
               <div class="editor-section-head">
                 <div class="editor-section-title">备注信息</div>
               </div>
-              <a-form-item field="remarks"  class="editor-remark-field">
+              <a-form-item field="remarks" class="editor-remark-field">
                 <a-textarea
                   v-model="editingData.remarks"
                   placeholder="请输入客户备注、需求背景或需要提醒的事项"
@@ -573,7 +591,7 @@
       <!-- 状态更新弹窗 -->
       <a-modal
         v-model:visible="statusModalVisible"
-        :title="getModalTitle()"
+        title="更新业务阶段"
         :on-before-ok="handleStatusSave"
         @cancel="handleStatusCancel"
         :width="400"
@@ -605,7 +623,7 @@
             @click="handleManageValid"
             style="color: #165dff"
             v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-          >管理</a-button
+            >管理</a-button
           >
         </div>
         <a-form :model="validUpdateForm" ref="validFormRef">
@@ -722,7 +740,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
 import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
-import { formatTime, getDictOptionName } from "@/globals";
+import { formatTime } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { verifyPhone } from "@/utils/verify-tools";
 import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
@@ -734,6 +752,19 @@ import { buildCustomerListParams, createCustomerSearchForm, resetCustomerSearchF
 import { formatCustomerRemarkDisplay } from "../../hooks/remark.ts";
 import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
 import { useCustomerDepartmentScope } from "../../hooks/department.ts";
+import {
+  getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
+  getCustomerIntentionOptionName as resolveCustomerIntentionOptionName,
+  getCustomerOptionName as resolveCustomerOptionName,
+  getCustomerStarDisplayText as resolveCustomerStarDisplayText,
+  getCustomerStarOptionName as resolveCustomerStarOptionName,
+  getCustomerStarTagColor as resolveCustomerStarTagColor,
+  getCustomerStatusColor as resolveCustomerStatusColor,
+  getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
+  getCustomerStatusOptionName as resolveCustomerStatusOptionName,
+  getCustomerValidModalTitle as resolveCustomerValidModalTitle,
+  useCustomerValidOptions
+} from "../../hooks/customer-status.ts";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
@@ -859,14 +890,19 @@ const editValidModalVisible = ref(false);
 const editValidFormRef = ref();
 const validLoading = ref(false);
 const customerValidList = ref<CustomerValidData[]>([]);
-const customerValidOptions = ref<CustomerValidData[]>([]);
-const allCustomerValidOptionsMap = ref<Map<number, CustomerValidData>>(new Map());
 const editingValid = reactive<Partial<CustomerValidData>>({
   id: undefined,
   type: 1,
   name: "",
   status: 1
 });
+const {
+  customerValidOptions,
+  allCustomerValidOptionsMap,
+  getCustomerValidName: resolveCustomerValidName,
+  loadCustomerValidOptions: fetchCustomerValidOptions,
+  loadAllCustomerValidOptions: fetchAllCustomerValidOptions
+} = useCustomerValidOptions();
 
 const validRules = {
   name: [{ required: true, message: "请输入名称" }],
@@ -1206,7 +1242,7 @@ const buildUpdatePayload = (): SysCustomerUpdateParams => ({
   extra: buildExtraPayload(),
   sex: editingData.sex ?? 2,
   remarks: getTrimmedString(editingData.remarks),
-  age: editingData.age ?? null,
+  age: editingData.age ?? undefined,
   deptId: editingData.deptId != null ? Number(editingData.deptId) : undefined,
   isLock: editingData.isLock ?? 0,
   singlePieceType: editingData.singlePieceType ?? 0
@@ -1272,40 +1308,11 @@ const handleStatusChange = (record: SysCustomerData, newStatus: number) => {
 };
 
 // 获取状态颜色
-const getStatusColor = (status: number) => {
-  return status === 0 ? "" : status === 7 ? "green" : "arcoblue";
-};
-
-// 获取弹窗标题
-const getModalTitle = () => {
-  if (statusUpdateForm.currentStatus === statusUpdateForm.newStatus) {
-    return "添加/修改进度备注";
-  } else {
-    return "更新业务阶段";
-  }
-};
+const getStatusColor = (status: number) => resolveCustomerStatusColor(status);
 
 // 获取状态显示文本（包含进度备注）
 const getStatusDisplayText = (record: SysCustomerData) => {
-  const statusName = statusOption.value.find(item => Number(item.value) === record.status)?.name || "";
-
-  // 解析extra字段获取progress_remark
-  let progressRemark = "";
-  if (record.extra && typeof record.extra === "string") {
-    try {
-      const extraObj = JSON.parse(record.extra);
-      if (extraObj.progress_remark) {
-        progressRemark = String(extraObj.progress_remark).trim();
-        // 移除可能的多余字符
-        progressRemark = progressRemark.replace(/\s*-\s*$/, "");
-      }
-    } catch (error) {
-      console.error("解析extra字段失败:", error);
-    }
-  }
-
-  // 如果有进度备注，则拼接显示
-  return progressRemark ? `${statusName} - ${progressRemark}` : statusName;
+  return resolveCustomerStatusDisplayText(record, statusOption.value);
 };
 
 // 保存状态更新
@@ -1337,7 +1344,7 @@ const handleStatusSave = async () => {
     let extraObj: Record<string, any> = {};
     if (currentRecord.extra && typeof currentRecord.extra === "string") {
       try {
-        extraObj = JSON.parse(currentRecord.extra);
+        extraObj = JSON.parse(String(currentRecord.extra));
       } catch (error) {
         console.error("解析extra字段失败:", error);
       }
@@ -1374,88 +1381,37 @@ const handleStatusCancel = () => {
 
 // 获取客户有效性弹窗标题
 const getValidModalTitle = () => {
-  switch (validUpdateForm.newIntention) {
-    case 1:
-      return "有效说明";
-    case 2:
-      return "无效说明";
-    case 3:
-      return "黑名单";
-    default:
-      return "客户有效性";
-  }
+  return resolveCustomerValidModalTitle(validUpdateForm.newIntention);
 };
 
 // 获取客户有效性显示文本（包含说明名称）
 const getIntentionDisplayText = (record: SysCustomerData) => {
-  const intentionName = intentionOption.value.find(item => Number(item.value) === record.intention)?.name || "";
-
-  // 如果intention为0（待确认），直接返回名称
-  if (record.intention === 0) {
-    return intentionName;
-  }
-
-  // 解析extra字段获取intention_valid_id
-  let validName = "";
-  if (record.extra && typeof record.extra === "string") {
-    try {
-      const extraObj = JSON.parse(record.extra);
-      const validId = extraObj.intention_valid_id;
-
-      if (validId) {
-        // 从所有客户有效性标签中查找对应的名称
-        // 注意：这里需要确保customerValidOptions已经加载了所有类型的数据
-        // 或者我们需要维护一个全局的标签映射
-        const validItem = allCustomerValidOptionsMap.value.get(validId);
-        if (validItem) {
-          validName = validItem.name;
-        }
-      }
-    } catch (error) {
-      console.error("解析extra字段失败:", error);
-    }
-  }
-
-  // 如果有说明名称，则拼接显示
-  return validName ? `${intentionName} - ${validName}` : intentionName;
+  return resolveCustomerIntentionDisplayText(record, intentionOption.value, allCustomerValidOptionsMap.value);
 };
 
 // 获取星级显示文本
 const getCustomerStarDisplayText = (record: SysCustomerData) => {
-  if (record.customerStar == null) {
-    return "未定级";
-  }
-  return customerStarOption.value.find(item => Number(item.value) === Number(record.customerStar))?.name || "未定级";
+  return resolveCustomerStarDisplayText(record, customerStarOption.value);
 };
 
 const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number | string | null) => {
-  return getDictOptionName(options, value, "");
+  return resolveCustomerOptionName(options, value, "");
 };
 
-const getStatusOptionName = (value?: number) => getOptionName(statusOption.value, value);
+const getStatusOptionName = (value?: number) => resolveCustomerStatusOptionName(statusOption.value, value);
 
-const getIntentionOptionName = (value?: number) => getOptionName(intentionOption.value, value);
+const getIntentionOptionName = (value?: number) => resolveCustomerIntentionOptionName(intentionOption.value, value);
 
 const getCustomerStarOptionName = (value?: number | null) => {
-  if (value == null) {
-    return "未定级";
-  }
-  return getOptionName(customerStarOption.value, value);
+  return resolveCustomerStarOptionName(customerStarOption.value, value);
 };
 
 const getCustomerStarTagColor = (value?: number | null) => {
-  if (value == null) {
-    return "";
-  }
-  return [0, 1, 2].includes(Number(value)) ? "red" : "arcoblue";
+  return resolveCustomerStarTagColor(value);
 };
 
 const getCustomerValidName = (validId?: number) => {
-  if (!validId) {
-    return "";
-  }
-
-  return allCustomerValidOptionsMap.value.get(validId)?.name || "";
+  return resolveCustomerValidName(validId);
 };
 
 // 处理星级变化
@@ -1500,30 +1456,14 @@ const handleIntentionChange = (record: SysCustomerData, newIntention: number) =>
 
 // 加载客户有效性标签选项
 const loadCustomerValidOptions = async (type: number) => {
-  try {
-    const response = await getCustomerValidList({ type, status: 1, pageSize: 100 });
-    customerValidOptions.value = response.data.list || [];
-  } catch (error) {
-    console.error("加载客户有效性标签选项失败:", error);
-    customerValidOptions.value = [];
-  }
+  await fetchCustomerValidOptions(type, { status: 1 });
+  return;
 };
 
 // 加载所有客户有效性标签（页面初始化时调用）
 const loadAllCustomerValidOptions = async () => {
-  try {
-    const response = await getCustomerValidList({ pageSize: 1000 });
-    const allOptions = response.data.list || [];
-
-    // 创建ID到标签对象的映射，方便快速查找
-    const map = new Map<number, CustomerValidData>();
-    allOptions.forEach(item => {
-      map.set(item.id, item);
-    });
-    allCustomerValidOptionsMap.value = map;
-  } catch (error) {
-    console.error("加载所有客户有效性标签失败:", error);
-  }
+  await fetchAllCustomerValidOptions();
+  return;
 };
 
 // 保存客户有效性标签选择

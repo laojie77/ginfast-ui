@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="customer-detail-drawer">
     <a-drawer
       v-model:visible="visible"
@@ -293,8 +293,8 @@
                 <div v-if="followRecords.length" class="chat-message-list">
                   <div v-for="record in followRecords" :key="record.id" class="message-item">
                     <div class="message-left">
-                      <a-avatar :size="36" class="record-avatar" :image-url="handleUrl(record.avatar)">
-                        <template v-if="!record.avatar && record.userName">{{ record.userName.charAt(0) }}</template>
+                      <a-avatar :size="36" class="record-avatar" :image-url="handleUrl((record as any).avatar)">
+                        <template v-if="!(record as any).avatar && record.userName">{{ record.userName.charAt(0) }}</template>
                       </a-avatar>
                     </div>
                     <div class="message-right">
@@ -471,7 +471,9 @@ import {
   createCustomerValid,
   updateCustomerValid,
   deleteCustomerValid,
-  type CustomerValidData
+  type CustomerValidCreateParams,
+  type CustomerValidData,
+  type CustomerValidUpdateParams
 } from "@/api/customervalid";
 import { formatTime, getDictOptionName } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
@@ -485,6 +487,18 @@ import {
 import { handleUrl } from "@/utils/app";
 import { formatRemarkDisplay } from "../../hooks/remark.ts";
 import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
+import {
+  getCustomerIntentionColor as resolveCustomerIntentionColor,
+  getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
+  getCustomerProgressRemark as resolveCustomerProgressRemark,
+  getCustomerStarDisplayText as resolveCustomerStarDisplayText,
+  getCustomerStarTagColor as resolveCustomerStarTagColor,
+  getCustomerStatusColor as resolveCustomerStatusColor,
+  getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
+  getCustomerValidModalTitle as resolveCustomerValidModalTitle,
+  parseCustomerExtra,
+  useCustomerValidOptions
+} from "../../hooks/customer-status.ts";
 
 import {
   createSysCustomerTraces,
@@ -608,8 +622,13 @@ const inlineEditSubmittingField = ref<InlineEditableField>();
 const extraForm = reactive<Record<string, string>>({});
 const statusModalVisible = ref(false);
 const validModalVisible = ref(false);
-const customerValidOptions = ref<CustomerValidData[]>([]);
-const allCustomerValidOptionsMap = ref<Map<number, CustomerValidData>>(new Map());
+const {
+  customerValidOptions,
+  allCustomerValidOptionsMap,
+  getCustomerValidName: resolveCustomerValidName,
+  filterCustomerValidOptions: applyCustomerValidOptionsFilter,
+  loadAllCustomerValidOptions: fetchAllCustomerValidOptions
+} = useCustomerValidOptions();
 
 // 客户有效性标签管理相关
 const manageValidModalVisible = ref(false);
@@ -648,15 +667,7 @@ const validUpdateForm = reactive<{
 });
 
 const parseExtra = (extra: CustomerDetailData["extra"]) => {
-  if (!extra) return {};
-  if (typeof extra === "object") return { ...extra };
-
-  try {
-    return JSON.parse(extra);
-  } catch (error) {
-    console.error("解析客户资质失败:", error);
-    return {};
-  }
+  return parseCustomerExtra(extra);
 };
 
 const syncExtraForm = (extra: CustomerDetailData["extra"]) => {
@@ -694,10 +705,7 @@ const getTextByOptions = (options: SelectOption[], value?: number) => {
 const getStatusText = (status?: number) => getTextByOptions(props.statusOptions, status);
 const getIntentionText = (intention?: number) => getTextByOptions(props.intentionOptions, intention);
 const getStarText = (star?: number | null) => {
-  if (star === undefined || star === null) {
-    return "未定级";
-  }
-  return getTextByOptions(props.starOptions, star);
+  return resolveCustomerStarDisplayText({ customerStar: star }, props.starOptions, "未定级");
 };
 const getSexText = (sex?: number) => getTextByOptions(props.sexOptions, sex);
 const getSinglePieceTypeText = (type?: number) => getTextByOptions(props.singlePieceTypeOptions, type);
@@ -725,18 +733,15 @@ const getDepartmentName = (deptId?: number) => {
 };
 
 const getStatusColor = (status?: number) => {
-  if (status === undefined) return "";
-  return status === 0 ? "" : status === 7 ? "green" : "arcoblue";
+  return resolveCustomerStatusColor(status);
 };
 
 const getIntentionColor = (intention?: number) => {
-  if (intention === undefined) return "";
-  return intention === 0 ? "" : intention === 1 ? "green" : intention === 2 ? "red" : "orange";
+  return resolveCustomerIntentionColor(intention);
 };
 
 const getStarColor = (star?: number | null) => {
-  if (star === undefined || star === null) return "";
-  return [0, 1, 2].includes(Number(star)) ? "red" : "arcoblue";
+  return resolveCustomerStarTagColor(star);
 };
 
 const getSinglePieceTypeColor = (type?: number) => {
@@ -744,44 +749,19 @@ const getSinglePieceTypeColor = (type?: number) => {
 };
 
 const getProgressRemark = () => {
-  const extraObj = parseExtra(localCustomer.value?.extra);
-  let progressRemark = String(extraObj.progress_remark || "").trim();
-
-  // 移除可能的多余连字符（与列表视图保持一致）
-  progressRemark = progressRemark.replace(/\s*-\s*$/, "");
-
-  return progressRemark;
-};
-
-const getIntentionValidId = () => {
-  const extraObj = parseExtra(localCustomer.value?.extra);
-  const validId = Number(extraObj.intention_valid_id);
-  return Number.isFinite(validId) && validId > 0 ? validId : undefined;
+  return resolveCustomerProgressRemark(localCustomer.value?.extra);
 };
 
 const getStatusDisplayText = () => {
-  const statusName = getStatusText(localCustomer.value?.status);
-  const progressRemark = getProgressRemark();
-  return progressRemark ? `${statusName} - ${progressRemark}` : statusName;
+  return resolveCustomerStatusDisplayText(localCustomer.value || {}, props.statusOptions);
 };
 
 const getIntentionDisplayText = () => {
-  const intentionName = getIntentionText(localCustomer.value?.intention);
-  if (Number(localCustomer.value?.intention) === 0) {
-    return intentionName;
-  }
-
-  const validId = getIntentionValidId();
-  const validName = validId ? allCustomerValidOptionsMap.value.get(validId)?.name || "" : "";
-  return validName ? `${intentionName} - ${validName}` : intentionName;
+  return resolveCustomerIntentionDisplayText(localCustomer.value || {}, props.intentionOptions, allCustomerValidOptionsMap.value);
 };
 
 const getCustomerValidName = (validId?: number) => {
-  if (!validId) {
-    return "";
-  }
-
-  return allCustomerValidOptionsMap.value.get(validId)?.name || "";
+  return resolveCustomerValidName(validId);
 };
 
 const getSinglePieceTypeDisplayText = () => {
@@ -798,16 +778,7 @@ const getStatusModalTitle = () => {
 };
 
 const getValidModalTitle = () => {
-  switch (validUpdateForm.newIntention) {
-    case 1:
-      return "有效说明";
-    case 2:
-      return "无效说明";
-    case 3:
-      return "黑名单";
-    default:
-      return "客户有效";
-  }
+  return resolveCustomerValidModalTitle(validUpdateForm.newIntention);
 };
 
 const getExtraPropertyOptions = (property: string) => {
@@ -913,7 +884,8 @@ const startInlineEdit = (field: InlineEditableField) => {
   }
 
   editingField.value = field;
-  editingValue.value = localCustomer.value[field] === undefined || localCustomer.value[field] === null ? "" : String(localCustomer.value[field]);
+  editingValue.value =
+    localCustomer.value[field] === undefined || localCustomer.value[field] === null ? "" : String(localCustomer.value[field]);
 
   nextTick(() => {
     inlineEditInputRef.value?.focus?.();
@@ -1248,7 +1220,6 @@ const handleValidSaveQuick = async () => {
   }
 };
 
-
 const handleStatusCancel = () => {
   statusModalVisible.value = false;
   statusUpdateForm.currentStatus = undefined;
@@ -1338,11 +1309,11 @@ const handleSaveValid = async () => {
 
     if (editingValid.id) {
       // 编辑
-      await updateCustomerValid(editingValid.id, editingValid);
+      await updateCustomerValid(editingValid as CustomerValidUpdateParams);
       Message.success("编辑成功");
     } else {
       // 新增
-      await createCustomerValid(editingValid);
+      await createCustomerValid(editingValid as CustomerValidCreateParams);
       Message.success("新增成功");
     }
 
@@ -1359,7 +1330,6 @@ const handleSaveValid = async () => {
     return true;
   } catch (error) {
     console.error("保存失败:", error);
-    // Message.error("保存失败");
     return false;
   }
 };
@@ -1401,37 +1371,17 @@ const handleToggleLock = async () => {
     emit("updated", localCustomer.value);
   } catch (error) {
     console.error("切换锁定状态失败:", error);
-    // Message.error("切换锁定状态失败");
   }
 };
 
 const filterCustomerValidOptions = (type?: number) => {
-  if (!allCustomerValidOptionsMap.value.size) {
-    customerValidOptions.value = [];
-    return;
-  }
-
-  // 从已加载的所有选项中筛选对应类型
-  const allOptions = Array.from(allCustomerValidOptionsMap.value.values());
-  if (type === undefined) {
-    customerValidOptions.value = allOptions;
-  } else {
-    customerValidOptions.value = allOptions.filter(item => item.type === type);
-  }
+  applyCustomerValidOptionsFilter(type);
+  return;
 };
 
 const loadAllCustomerValidOptions = async () => {
-  try {
-    // 加载所有类型的客户有效性选项（不限制type）
-    const response = await getCustomerValidList({
-      status: 1,
-      pageSize: 1000
-    });
-    const allOptions = response.data.list || [];
-    allCustomerValidOptionsMap.value = new Map(allOptions.map(item => [item.id, item]));
-  } catch (error) {
-    console.error("加载客户有效选项失败:", error);
-  }
+  await fetchAllCustomerValidOptions({ status: 1 });
+  return;
 };
 
 const handleClose = () => {
