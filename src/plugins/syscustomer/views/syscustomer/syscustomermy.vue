@@ -722,14 +722,13 @@ import SysCustomerDetail from "./syscustomerdetail.vue";
 import { buildCustomerListParams, createCustomerSearchForm, resetCustomerSearchForm } from "../../hooks/list-query.ts";
 import { formatCustomerRemarkDisplay } from "../../hooks/remark.ts";
 import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
+import { useCustomerDepartmentScope } from "../../hooks/department.ts";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
-import { userType } from "@/store/types.ts";
-import { getDivisionAPI, type DivisionItem } from "@/api/department"; //部门列表数据
-import { getAccountListAPI, type AccountItem } from "@/api/user"; //用户列表数据
+import type { DivisionItem } from "@/api/department";
 import { useSysConfigStore } from "@/store/modules/sys-config"; // 系统配置store
-const userInfo = getLocalStorage<userType>(UserInfoKey);
+const userInfo = getLocalStorage<any>(UserInfoKey);
 const listScene = "my" as const;
 
 // Extra字段属性定义常量
@@ -767,198 +766,16 @@ const EXTRA_PROPERTY_LABELS = {
 const sysConfigStore = useSysConfigStore();
 const CUSTOMER_EXTRA_OPTIONS = computed(() => sysConfigStore.customerExtraConfig);
 
-// 数据权限判断函数
-const getDataPermissionInfo = () => {
-  const userRoles = userInfo?.roles || [];
-  const userDeptId = userInfo?.department;
-
-  // 检查是否有超级管理员权限 (dataScope=1)
-  const hasSuperAdmin = userRoles.some(role => role.createdBy === 1 && role.dataScope === 1);
-
-  if (hasSuperAdmin) {
-    return {
-      hasFullPermission: true,
-      allowedDeptIds: [], // 空数组表示全部权限
-      description: "超级管理员：查看全部部门和员工"
-    };
-  }
-
-  // 合并所有角色的权限：收集所有允许的部门ID
-  const allowedDeptIds = new Set<number>();
-
-  for (const role of userRoles) {
-    const checkedDepts = role.checkedDepts ? role.checkedDepts.split(",").map(Number) : [];
-
-    switch (role.dataScope) {
-      case 2: // 自定义权限
-        if (checkedDepts.length === 0) {
-          // checkedDepts为空，查看自身部门
-          if (userDeptId) {
-            allowedDeptIds.add(userDeptId);
-          }
-        } else {
-          // checkedDepts不为空，查看指定部门
-          checkedDepts.forEach(deptId => allowedDeptIds.add(deptId));
-        }
-        break;
-      case 3: // 本部门数据
-        if (userDeptId) {
-          allowedDeptIds.add(userDeptId);
-        }
-        break;
-      case 4: // 本部门及子部门
-        if (userDeptId) {
-          allowedDeptIds.add(userDeptId);
-          // 递归添加所有子部门ID
-          const addChildDepartments = (nodes: DivisionItem[]) => {
-            for (const node of nodes) {
-              if (node.id === userDeptId && node.children) {
-                node.children.forEach(child => {
-                  allowedDeptIds.add(child.id);
-                  if (child.children) {
-                    addChildDepartments(child.children);
-                  }
-                });
-                break;
-              }
-              if (node.children) {
-                addChildDepartments(node.children);
-              }
-            }
-          };
-          addChildDepartments(departmentTree.value);
-        }
-        break;
-    }
-  }
-
-  return {
-    hasFullPermission: false,
-    allowedDeptIds: Array.from(allowedDeptIds),
-    description: `普通权限：查看${allowedDeptIds.size}个部门的员工`
-  };
-};
-// userInfo.department 为当前自身部门
-//roleIDs:[5, 6]
-//roles:[
-// {checkedDepts:"5,6,7"，children:null，dataScope:2,id:5,name:"主管",createdBy=4}
-// {checkedDepts:""，children:null，dataScope:0,id:6,name:"员工",createdBy=4}
-// ] 为多身份
-// 如果dataScope=1，则为负责人显示全部部门和员工列表
-// 如果dataScope=2，则显示checkedDepts下的部门
-// 如果dataScope=3，则显示查询自身所属部门的所属用户创建的数据
-// 如果dataScope=4，则显示查询自身所属部门及该部门下所有子级部门的所属用户创建的数据
-// 如果dataScope=0，仅查看自己,不参与这个页面
-
 // 部门树数据
-const departmentTree = ref<DivisionItem[]>([]);
-
-// 跟进人列表数据
-const followerOptions = ref<{ value: number; name: string }[]>([]);
-
-// 获取部门树数据
-const getDepartmentTree = async () => {
-  try {
-    const res = await getDivisionAPI();
-    departmentTree.value = res.data.list || [];
-  } catch (error) {
-    console.error("获取部门数据失败:", error);
-    departmentTree.value = [];
-  }
-};
-
-// 根据部门ID获取跟进人列表
-const getFollowerListByDepartment = async (departmentIds: number[]) => {
-  try {
-    let response;
-
-    // 如果有部门ID，构建参数并调用API；如果没有部门ID，直接调用API获取全部员工
-    if (departmentIds.length > 0) {
-      // 构建参数
-      const params: any = {
-        pageNum: 1,
-        pageSize: 100
-      };
-
-      // 添加部门ID参数
-      departmentIds.forEach((deptId, index) => {
-        params[`deptIds[${index}]`] = deptId;
-      });
-
-      response = await getAccountListAPI(params);
-    } else {
-      // 直接调用API，不传任何参数，获取全部员工
-      response = await getAccountListAPI();
-    }
-
-    if (response.data && Array.isArray(response.data.list)) {
-      // 将用户数据转换为选项格式
-      followerOptions.value = response.data.list.map((item: AccountItem) => ({
-        value: item.id,
-        name: item.nickName
-      }));
-    } else {
-      followerOptions.value = [];
-    }
-  } catch (error) {
-    console.error("获取跟进人列表失败:", error);
-    followerOptions.value = [];
-  }
-};
-
-// 将部门数据转换为a-cascader格式
-const convertToCascaderFormat = (nodes: DivisionItem[]): any[] => {
-  return nodes.map(node => ({
-    value: node.id,
-    label: node.name,
-    children: node.children && node.children.length > 0 ? convertToCascaderFormat(node.children) : undefined
-  }));
-};
-
-// 根据数据权限过滤部门树并转换为cascader格式
-const cascaderOptions = computed(() => {
-  if (!departmentTree.value.length) return [];
-
-  // 获取数据权限信息
-  const permissionInfo = getDataPermissionInfo();
-
-  // 如果是超级管理员，显示全部部门
-  if (permissionInfo.hasFullPermission) {
-    return convertToCascaderFormat(departmentTree.value);
-  }
-
-  // 如果没有允许的部门ID，返回空数组
-  if (permissionInfo.allowedDeptIds.length === 0) {
-    return [];
-  }
-
-  // 根据允许的部门ID过滤部门树
-  const filterByAllowedDepartments = (nodes: DivisionItem[]): DivisionItem[] => {
-    const result: DivisionItem[] = [];
-
-    for (const node of nodes) {
-      if (permissionInfo.allowedDeptIds.includes(node.id)) {
-        const newNode = { ...node };
-        if (node.children && node.children.length > 0) {
-          newNode.children = filterByAllowedDepartments(node.children);
-        }
-        result.push(newNode);
-      } else if (node.children && node.children.length > 0) {
-        // 检查子节点是否有允许的部门
-        const filteredChildren = filterByAllowedDepartments(node.children);
-        if (filteredChildren.length > 0) {
-          const newNode = { ...node, children: filteredChildren };
-          result.push(newNode);
-        }
-      }
-    }
-
-    return result;
-  };
-
-  const filteredTree = filterByAllowedDepartments(departmentTree.value);
-  return convertToCascaderFormat(filteredTree);
-});
+const {
+  departmentTree,
+  departmentTreeLoaded,
+  followerOptions,
+  cascaderOptions,
+  loadDepartmentTree: getDepartmentTree,
+  loadFollowerOptionsForSearch,
+  getDepartmentName
+} = useCustomerDepartmentScope(userInfo);
 
 // 弹窗布局配置
 const layoutMode = computed(() => {
@@ -982,7 +799,6 @@ const isStatusOption = ref(dictFilter("isStatus"));
 const starStatusOption = ref(dictFilter("starStatus"));
 const fromOption = ref(dictFilter("from"));
 const isSmsOption = ref(dictFilter("isSms"));
-const taskStatusOption = ref(dictFilter("taskStatus"));
 const singlePieceTypeOption = ref(dictFilter("singlePieceTypeArr"));
 const sexOption = ref(dictFilter("gender"));
 
@@ -1057,24 +873,10 @@ const searchForm = reactive(createCustomerSearchForm());
 
 // 监听部门选择变化，更新跟进人列表
 watch(
-  () => searchForm.deptId,
-  async newDeptId => {
-    if (newDeptId) {
-      // 选择了具体部门：加载该部门的员工列表
-      const deptId = Array.isArray(newDeptId) ? newDeptId[newDeptId.length - 1] : newDeptId;
-      await getFollowerListByDepartment([deptId]);
-    } else {
-      // 没有选择部门：根据数据权限加载员工列表
-      const permissionInfo = getDataPermissionInfo();
-
-      if (permissionInfo.hasFullPermission) {
-        // 负责人显示全部员工，不传部门ID参数
-        await getFollowerListByDepartment([]);
-      } else {
-        // 其他角色加载用户权限范围内的所有部门人员
-        await getFollowerListByDepartment(permissionInfo.allowedDeptIds);
-      }
-    }
+  [() => searchForm.deptId, () => departmentTreeLoaded.value],
+  async ([newDeptId, isDepartmentTreeLoaded]) => {
+    if (!isDepartmentTreeLoaded) return;
+    await loadFollowerOptionsForSearch(newDeptId);
   },
   { immediate: true }
 );
@@ -1894,25 +1696,6 @@ const fetchChannelData = async () => {
     console.error("获取渠道数据失败:", error);
     channelOption.value = [];
   }
-};
-
-const getDepartmentName = (departmentId: number | undefined): string => {
-  if (!departmentId || !departmentTree.value.length) return "";
-
-  const findDepartmentName = (nodes: DivisionItem[]): string => {
-    for (const node of nodes) {
-      if (node.id === departmentId) {
-        return node.name;
-      }
-      if (node.children && node.children.length > 0) {
-        const result = findDepartmentName(node.children);
-        if (result) return result;
-      }
-    }
-    return "";
-  };
-
-  return findDepartmentName(departmentTree.value);
 };
 
 onMounted(async () => {
