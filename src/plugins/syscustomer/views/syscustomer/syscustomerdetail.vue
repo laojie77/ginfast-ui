@@ -17,89 +17,41 @@
           </div>
 
           <div class="serial-status">
-            <a-dropdown @select="handleStatusSelect">
-              <a-tooltip :content="getStatusDisplayText()" position="top">
-                <a-tag
-                  size="small"
-                  :color="getStatusColor(localCustomer?.status)"
-                  :class="['dropdown-tag', getStatusDisplayText().length > 20 ? 'multiline' : '']"
-                >
-                  业务阶段：{{ getStatusDisplayText() }}
-                </a-tag>
-              </a-tooltip>
-              <template #content>
-                <a-doption
-                  v-for="item in props.statusOptions"
-                  :key="item.value"
-                  :value="Number(item.value)"
-                  :style="{ color: Number(item.value) === Number(localCustomer?.status) ? '#165dff' : '' }"
-                >
-                  {{ item.name }}
-                </a-doption>
-              </template>
-            </a-dropdown>
+            <CustomerOptionDropdownTag
+              :text="`业务阶段：${getStatusDisplayText()}`"
+              :tooltip="getStatusDisplayText()"
+              :options="props.statusOptions"
+              :selected-value="localCustomer?.status"
+              :color="getStatusColor(localCustomer?.status)"
+              @select="handleStatusSelect"
+            />
 
-            <a-dropdown @select="handleIntentionSelect">
-              <a-tooltip :content="getIntentionDisplayText()" position="top">
-                <a-tag
-                  size="small"
-                  :color="getIntentionColor(localCustomer?.intention)"
-                  :class="['dropdown-tag', getIntentionDisplayText().length > 20 ? 'multiline' : '']"
-                >
-                  客户状态：{{ getIntentionDisplayText() }}
-                </a-tag>
-              </a-tooltip>
-              <template #content>
-                <a-doption
-                  v-for="item in props.intentionOptions"
-                  :key="item.value"
-                  :value="Number(item.value)"
-                  :style="{ color: Number(item.value) === Number(localCustomer?.intention) ? '#165dff' : '' }"
-                >
-                  {{ item.name }}
-                </a-doption>
-              </template>
-            </a-dropdown>
+            <CustomerOptionDropdownTag
+              :text="`客户状态：${getIntentionDisplayText()}`"
+              :tooltip="getIntentionDisplayText()"
+              :options="props.intentionOptions"
+              :selected-value="localCustomer?.intention"
+              :color="getIntentionColor(localCustomer?.intention)"
+              @select="handleIntentionSelect"
+            />
 
-            <a-dropdown @select="handleStarSelect">
-              <a-tooltip :content="getStarText(localCustomer?.customerStar)" position="top">
-                <a-tag size="small" :color="getStarColor(localCustomer?.customerStar)" class="dropdown-tag">
-                  星级：{{ getStarText(localCustomer?.customerStar) }}
-                </a-tag>
-              </a-tooltip>
-              <template #content>
-                <a-doption
-                  v-for="item in props.starOptions"
-                  :key="item.value"
-                  :value="Number(item.value)"
-                  :style="{ color: Number(item.value) === Number(localCustomer?.customerStar) ? '#165dff' : '' }"
-                >
-                  {{ item.name }}
-                </a-doption>
-              </template>
-            </a-dropdown>
+            <CustomerOptionDropdownTag
+              :text="`星级：${getStarText(localCustomer?.customerStar)}`"
+              :tooltip="getStarText(localCustomer?.customerStar)"
+              :options="props.starOptions"
+              :selected-value="localCustomer?.customerStar"
+              :color="getStarColor(localCustomer?.customerStar)"
+              @select="handleStarSelect"
+            />
 
-            <a-dropdown @select="handleSinglePieceTypeSelect">
-              <a-tooltip :content="getSinglePieceTypeDisplayText()" position="top">
-                <a-tag
-                  size="small"
-                  :color="getSinglePieceTypeColor(localCustomer?.singlePieceType)"
-                  :class="['dropdown-tag', getSinglePieceTypeDisplayText().length > 20 ? 'multiline' : '']"
-                >
-                  {{ getSinglePieceTypeDisplayText() }}
-                </a-tag>
-              </a-tooltip>
-              <template #content>
-                <a-doption
-                  v-for="item in props.singlePieceTypeOptions"
-                  :key="item.value"
-                  :value="Number(item.value)"
-                  :style="{ color: Number(item.value) === Number(localCustomer?.singlePieceType) ? '#165dff' : '' }"
-                >
-                  {{ item.name }}
-                </a-doption>
-              </template>
-            </a-dropdown>
+            <CustomerOptionDropdownTag
+              :text="getSinglePieceTypeDisplayText()"
+              :tooltip="getSinglePieceTypeDisplayText()"
+              :options="props.singlePieceTypeOptions"
+              :selected-value="localCustomer?.singlePieceType"
+              :color="getSinglePieceTypeColor(localCustomer?.singlePieceType)"
+              @select="handleSinglePieceTypeSelect"
+            />
           </div>
         </div>
 
@@ -465,15 +417,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import {
-  getCustomerValidList,
-  createCustomerValid,
-  updateCustomerValid,
-  deleteCustomerValid,
-  type CustomerValidCreateParams,
-  type CustomerValidData,
-  type CustomerValidUpdateParams
-} from "@/api/customervalid";
 import { formatTime, getDictOptionName } from "@/globals";
 import { useSysConfigStore } from "@/store/modules/sys-config";
 import {
@@ -484,12 +427,14 @@ import {
   type SysCustomerStatusTraceUpdateParams
 } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
+import CustomerOptionDropdownTag from "../../components/customer-option-dropdown-tag.vue";
 import { formatRemarkDisplay } from "../../hooks/remark.ts";
 import {
-  buildCustomerStarUpdatePayload,
-  buildIntentionTraceUpdatePayload,
-  buildStatusTraceUpdatePayload
-} from "../../hooks/status-trace.ts";
+  ALL_EXTRA_PROPERTIES,
+  EXTRA_PROPERTY_LABELS,
+  TOP_FIELD_LABELS,
+  type CustomerExtraProperty
+} from "../../hooks/customer-fields.ts";
 import {
   getCustomerIntentionColor as resolveCustomerIntentionColor,
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
@@ -498,10 +443,11 @@ import {
   getCustomerStarTagColor as resolveCustomerStarTagColor,
   getCustomerStatusColor as resolveCustomerStatusColor,
   getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
-  getCustomerValidModalTitle as resolveCustomerValidModalTitle,
   parseCustomerExtra,
   useCustomerValidOptions
 } from "../../hooks/customer-status.ts";
+import { useCustomerTraceActions } from "../../hooks/customer-trace-actions.ts";
+import { useCustomerValidManager } from "../../hooks/customer-valid-manager.ts";
 
 import {
   createSysCustomerTraces,
@@ -533,6 +479,8 @@ interface SummaryItem {
   maxLength?: number;
   precision?: number;
 }
+
+type TopFieldKey = keyof typeof TOP_FIELD_LABELS;
 
 interface Props {
   visible: boolean;
@@ -570,41 +518,6 @@ const emit = defineEmits<{
 
 const sysConfigStore = useSysConfigStore();
 
-const EXTRA_PROPERTIES = {
-  OCCUPATION: "occupation",
-  HOUSE: "house",
-  CAR: "car",
-  CREDIT_CARD: "creditcard",
-  INSURANCE: "insurance",
-  HOUSE_FUND: "housefund",
-  SOCIAL_INSURANCE: "socialinsurance",
-  ZHIMA_SCORE: "zhimascore",
-  SALARY_MONEY: "salarymoney",
-  EDUCATION: "education"
-} as const;
-
-const ALL_EXTRA_PROPERTIES = Object.values(EXTRA_PROPERTIES);
-
-const EXTRA_PROPERTY_LABELS: Record<string, string> = {
-  [EXTRA_PROPERTIES.OCCUPATION]: "职业",
-  [EXTRA_PROPERTIES.HOUSE]: "房产",
-  [EXTRA_PROPERTIES.CAR]: "车产",
-  [EXTRA_PROPERTIES.CREDIT_CARD]: "信用卡",
-  [EXTRA_PROPERTIES.INSURANCE]: "商业保险",
-  [EXTRA_PROPERTIES.HOUSE_FUND]: "公积金",
-  [EXTRA_PROPERTIES.SOCIAL_INSURANCE]: "社保",
-  [EXTRA_PROPERTIES.ZHIMA_SCORE]: "芝麻分",
-  [EXTRA_PROPERTIES.SALARY_MONEY]: "月薪",
-  [EXTRA_PROPERTIES.EDUCATION]: "学历"
-};
-
-const TOP_FIELD_LABELS: Record<string, string> = {
-  status: "业务阶段",
-  intention: "客户有效",
-  customerStar: "星级",
-  singlePieceType: "类型"
-};
-
 const visible = computed({
   get: () => props.visible,
   set: (value: boolean) => emit("update:visible", value)
@@ -623,8 +536,7 @@ const editingField = ref<InlineEditableField>();
 const editingValue = ref<string | undefined>("");
 const inlineEditSubmittingField = ref<InlineEditableField>();
 const extraForm = reactive<Record<string, string>>({});
-const statusModalVisible = ref(false);
-const validModalVisible = ref(false);
+const validFormRef = ref();
 const {
   customerValidOptions,
   allCustomerValidOptionsMap,
@@ -633,40 +545,58 @@ const {
   loadAllCustomerValidOptions: fetchAllCustomerValidOptions
 } = useCustomerValidOptions();
 
-// 客户有效性标签管理相关
-const manageValidModalVisible = ref(false);
-const editValidModalVisible = ref(false);
-const editValidFormRef = ref();
-const validLoading = ref(false);
-const customerValidList = ref<CustomerValidData[]>([]);
-const editingValid = reactive<Partial<CustomerValidData>>({
-  id: undefined,
-  type: 1,
-  name: "",
-  status: 1
+const filterCustomerValidOptions = (type?: number) => {
+  applyCustomerValidOptionsFilter(type);
+};
+
+const loadAllCustomerValidOptions = async () => {
+  await fetchAllCustomerValidOptions({ status: 1 });
+};
+
+const {
+  statusModalVisible,
+  validModalVisible,
+  statusUpdateForm,
+  validUpdateForm,
+  validModalTitle,
+  openStatusChange,
+  openIntentionChange,
+  saveStatusChange,
+  saveValidChange,
+  updateCustomerStar,
+  closeStatusModal,
+  closeValidModal
+} = useCustomerTraceActions<CustomerDetailData & { id: number }>({
+  getStatusName: value => getStatusText(value),
+  getIntentionName: value => getIntentionText(value),
+  getCustomerStarName: value => getStarText(value),
+  getCustomerValidName: validId => getCustomerValidName(validId),
+  prepareValidOptions: type => filterCustomerValidOptions(type),
+  persistTracePayload: (payload, context) => saveCustomerStatusTracePatch(payload, context.fieldKey, context.successText)
 });
 
-const validRules = {
-  name: [{ required: true, message: "请输入名称" }],
-  status: [{ required: true, message: "请选择状态" }]
-};
-const statusUpdateForm = reactive<{
-  currentStatus?: number;
-  newStatus?: number;
-  progressRemark: string;
-}>({
-  currentStatus: undefined,
-  newStatus: undefined,
-  progressRemark: ""
-});
-const validUpdateForm = reactive<{
-  currentIntention?: number;
-  newIntention?: number;
-  validId?: number;
-}>({
-  currentIntention: undefined,
-  newIntention: undefined,
-  validId: undefined
+const {
+  manageValidModalVisible,
+  editValidModalVisible,
+  editValidFormRef,
+  validLoading,
+  customerValidList,
+  editingValid,
+  validRules,
+  openManageValidModal: handleManageValid,
+  openCreateValid: handleCreateValid,
+  openEditValid: handleEditValid,
+  deleteValidItem: handleDeleteValid,
+  saveValidItem: handleSaveValid,
+  closeEditValidModal: handleCancelEditValid
+} = useCustomerValidManager({
+  getCurrentType: () => validUpdateForm.newIntention,
+  reloadAllOptions: () => loadAllCustomerValidOptions(),
+  reloadSelectableOptions: type => {
+    if (validModalVisible.value && type) {
+      filterCustomerValidOptions(type);
+    }
+  }
 });
 
 const parseExtra = (extra: CustomerDetailData["extra"]) => {
@@ -777,10 +707,10 @@ const getSinglePieceTypeDisplayText = () => {
 };
 
 const getValidModalTitle = () => {
-  return resolveCustomerValidModalTitle(validUpdateForm.newIntention);
+  return validModalTitle.value;
 };
 
-const getExtraPropertyOptions = (property: string) => {
+const getExtraPropertyOptions = (property: CustomerExtraProperty) => {
   const optionMap = CUSTOMER_EXTRA_OPTIONS.value[property] || {};
   return Object.entries(optionMap).map(([value, label]) => ({
     value,
@@ -991,61 +921,37 @@ const saveCustomerStatusTracePatch = async (
   }
 };
 
-const handleTopFieldChange = async (field: keyof CustomerDetailData, value: unknown) => {
+const handleTopFieldChange = async (field: TopFieldKey, value: unknown) => {
   if (value === undefined || value === null || !localCustomer.value?.id) return;
 
   const nextValue = Number(value);
   if (Number(localCustomer.value[field]) === nextValue) return;
 
-  await saveCustomerPatch({ [field]: nextValue }, String(field), `已更新${TOP_FIELD_LABELS[String(field)]}`);
+  await saveCustomerPatch({ [field]: nextValue }, field, `已更新${TOP_FIELD_LABELS[field]}`);
 };
 
 const handleStatusSelect = async (value: string | number) => {
   const newStatus = Number(value);
   const currentStatus = Number(localCustomer.value?.status);
 
-  if (newStatus === currentStatus) {
-    // 相同状态，打开备注弹窗
-    statusUpdateForm.currentStatus = currentStatus;
-    statusUpdateForm.newStatus = newStatus;
-    statusUpdateForm.progressRemark = getProgressRemark();
-    statusModalVisible.value = true;
-  } else {
-    // 不同状态，打开状态变更弹窗
-    statusUpdateForm.currentStatus = currentStatus;
-    statusUpdateForm.newStatus = newStatus;
-    statusUpdateForm.progressRemark = "";
-    statusModalVisible.value = true;
+  const customer = getCurrentCustomerTraceSource();
+  if (!customer) {
+    return;
   }
+
+  openStatusChange(customer, newStatus, {
+    progressRemark: newStatus === currentStatus ? getProgressRemark() : ""
+  });
 };
 
 const handleIntentionSelect = async (value: string | number) => {
   const newIntention = Number(value);
-  const currentIntention = Number(localCustomer.value?.intention);
-
-  if (newIntention === 0) {
-    // intention=0 待确认，不弹窗，直接更新
-    const customer = getCurrentCustomerTraceSource();
-    if (!customer) {
-      return;
-    }
-
-    await saveCustomerStatusTracePatch(
-      buildIntentionTraceUpdatePayload(customer, newIntention, getIntentionText, getCustomerValidName),
-      "intention",
-      `已更新${TOP_FIELD_LABELS.intention}`
-    );
+  const customer = getCurrentCustomerTraceSource();
+  if (!customer) {
     return;
   }
 
-  // 设置表单数据（不缓存上次选择，直接重置）
-  validUpdateForm.currentIntention = currentIntention;
-  validUpdateForm.newIntention = newIntention;
-  validUpdateForm.validId = undefined; // 重置选择，让用户重新选择
-
-  // 从已加载的所有选项中筛选对应类型
-  filterCustomerValidOptions(newIntention);
-  validModalVisible.value = true;
+  await openIntentionChange(customer, newIntention);
 };
 
 const handleStarSelect = async (value: string | number) => {
@@ -1054,23 +960,14 @@ const handleStarSelect = async (value: string | number) => {
     return;
   }
 
-  const nextValue = Number(value);
-  if (customer.customerStar === nextValue) {
-    return;
-  }
-
-  await saveCustomerStatusTracePatch(
-    buildCustomerStarUpdatePayload(customer, nextValue, getStarText),
-    "customerStar",
-    `已更新${TOP_FIELD_LABELS.customerStar}`
-  );
+  await updateCustomerStar(customer, Number(value));
 };
 
 const handleSinglePieceTypeSelect = async (value: string | number) => {
   await handleTopFieldChange("singlePieceType", value);
 };
 
-const handleExtraChange = async (property: string, value: unknown) => {
+const handleExtraChange = async (property: CustomerExtraProperty, value: unknown) => {
   if (!localCustomer.value?.id) return;
 
   const nextValue = value ? String(value) : "";
@@ -1155,190 +1052,34 @@ const handleAddRecord = async () => {
 };
 
 const handleStatusSaveQuick = async () => {
-  const customer = getCurrentCustomerTraceSource();
-  if (!customer) {
-    Message.error("客户信息不存在");
-    return false;
-  }
-
   try {
-    await saveCustomerStatusTracePatch(
-      buildStatusTraceUpdatePayload(
-        customer,
-        Number(statusUpdateForm.newStatus),
-        statusUpdateForm.progressRemark,
-        getStatusText
-      ),
-      "status",
-      `已更新${TOP_FIELD_LABELS.status}`
-    );
-
-    statusModalVisible.value = false;
-    return true;
+    return await saveStatusChange();
   } catch (error) {
     console.error("保存业务阶段失败:", error);
-    // Message.error("保存业务阶段失败");
     return false;
   }
 };
 
 const handleValidSaveQuick = async () => {
-  const customer = getCurrentCustomerTraceSource();
-  if (!customer) {
-    Message.error("客户信息不存在");
-    return false;
-  }
-
-  if (!validUpdateForm.validId) {
-    Message.error("请选择有效说明");
+  const isValid = await validFormRef.value?.validate();
+  if (isValid) {
     return false;
   }
 
   try {
-    await saveCustomerStatusTracePatch(
-      buildIntentionTraceUpdatePayload(
-        customer,
-        Number(validUpdateForm.newIntention),
-        getIntentionText,
-        getCustomerValidName,
-        validUpdateForm.validId
-      ),
-      "intention",
-      `已更新${TOP_FIELD_LABELS.intention}`
-    );
-
-    validModalVisible.value = false;
-    return true;
+    return await saveValidChange();
   } catch (error) {
     console.error("保存客户有效失败:", error);
-    // Message.error("保存客户有效失败");
     return false;
   }
 };
 
 const handleStatusCancel = () => {
-  statusModalVisible.value = false;
-  statusUpdateForm.currentStatus = undefined;
-  statusUpdateForm.newStatus = undefined;
-  statusUpdateForm.progressRemark = "";
+  closeStatusModal();
 };
 
 const handleValidCancel = () => {
-  validModalVisible.value = false;
-  validUpdateForm.currentIntention = undefined;
-  validUpdateForm.newIntention = undefined;
-  validUpdateForm.validId = undefined;
-};
-
-// 打开客户有效性标签管理
-const handleManageValid = () => {
-  // 加载对应类型的客户有效性标签列表
-  loadCustomerValidListByType(validUpdateForm.newIntention);
-  manageValidModalVisible.value = true;
-};
-
-// 加载指定类型的客户有效性标签列表
-const loadCustomerValidListByType = async (type?: number) => {
-  validLoading.value = true;
-  try {
-    const params: any = { pageSize: 100 };
-    if (type) {
-      params.type = type;
-    }
-    const response = await getCustomerValidList(params);
-    customerValidList.value = response.data.list || [];
-  } catch (error) {
-    console.error("加载客户有效性标签列表失败:", error);
-    customerValidList.value = [];
-  } finally {
-    validLoading.value = false;
-  }
-};
-
-// 创建客户有效性标签
-const handleCreateValid = () => {
-  Object.assign(editingValid, {
-    id: undefined,
-    type: validUpdateForm.newIntention || 1,
-    name: "",
-    status: 1
-  });
-  editValidModalVisible.value = true;
-};
-
-// 编辑客户有效性标签
-const handleEditValid = (record: CustomerValidData) => {
-  Object.assign(editingValid, record);
-  editValidModalVisible.value = true;
-};
-
-// 删除客户有效性标签
-const handleDeleteValid = async (id: number) => {
-  try {
-    await deleteCustomerValid(id);
-    Message.success("删除成功");
-    await loadCustomerValidListByType(validUpdateForm.newIntention);
-    // 重新加载所有标签映射
-    await loadAllCustomerValidOptions();
-    // 如果当前正在选择有效性标签，重新加载选项
-    if (validModalVisible.value && validUpdateForm.newIntention) {
-      filterCustomerValidOptions(validUpdateForm.newIntention);
-    }
-  } catch (error) {
-    console.error("删除失败:", error);
-    // Message.error("删除失败");
-  }
-};
-
-// 保存客户有效性标签
-const handleSaveValid = async () => {
-  try {
-    const form = editValidFormRef.value;
-    if (!form) {
-      return false;
-    }
-
-    const errors = await form.validate();
-    if (errors) {
-      return false;
-    }
-
-    if (editingValid.id) {
-      // 编辑
-      await updateCustomerValid(editingValid as CustomerValidUpdateParams);
-      Message.success("编辑成功");
-    } else {
-      // 新增
-      await createCustomerValid(editingValid as CustomerValidCreateParams);
-      Message.success("新增成功");
-    }
-
-    // 重新加载列表
-    await loadCustomerValidListByType(validUpdateForm.newIntention);
-    // 重新加载所有标签映射
-    await loadAllCustomerValidOptions();
-    // 如果当前正在选择有效性标签，重新加载选项
-    if (validModalVisible.value && validUpdateForm.newIntention) {
-      filterCustomerValidOptions(validUpdateForm.newIntention);
-    }
-
-    editValidModalVisible.value = false;
-    return true;
-  } catch (error) {
-    console.error("保存失败:", error);
-    return false;
-  }
-};
-
-// 取消编辑客户有效性标签
-const handleCancelEditValid = () => {
-  editValidModalVisible.value = false;
-  Object.assign(editingValid, {
-    id: undefined,
-    type: 1,
-    name: "",
-    status: 1
-  });
+  closeValidModal();
 };
 
 // 切换锁定状态
@@ -1368,16 +1109,6 @@ const handleToggleLock = async () => {
   } catch (error) {
     console.error("切换锁定状态失败:", error);
   }
-};
-
-const filterCustomerValidOptions = (type?: number) => {
-  applyCustomerValidOptionsFilter(type);
-  return;
-};
-
-const loadAllCustomerValidOptions = async () => {
-  await fetchAllCustomerValidOptions({ status: 1 });
-  return;
 };
 
 const handleClose = () => {
@@ -2009,25 +1740,6 @@ watch(
 .chat-actions-tip {
   color: #86909c;
   font-size: 12px;
-}
-
-.dropdown-tag {
-  cursor: pointer;
-  display: inline-block;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-wrap: break-word;
-  line-height: 1.4;
-  max-height: 2.8em;
-  white-space: nowrap;
-}
-
-.dropdown-tag.multiline {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  white-space: normal;
 }
 
 .chat-messages::-webkit-scrollbar {
