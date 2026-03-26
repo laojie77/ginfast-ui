@@ -750,7 +750,11 @@ import type { CustomerValidData, CustomerValidCreateParams, CustomerValidUpdateP
 import SysCustomerDetail from "./syscustomerdetail.vue";
 import { buildCustomerListParams, createCustomerSearchForm, resetCustomerSearchForm } from "../../hooks/list-query.ts";
 import { formatCustomerRemarkDisplay } from "../../hooks/remark.ts";
-import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
+import {
+  buildCustomerStarUpdatePayload,
+  buildIntentionTraceUpdatePayload,
+  buildStatusTraceUpdatePayload
+} from "../../hooks/status-trace.ts";
 import { useCustomerDepartmentScope } from "../../hooks/department.ts";
 import {
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
@@ -1328,31 +1332,12 @@ const handleStatusSave = async () => {
       return false;
     }
 
-    // 准备更新数据
-    const updatePayload: any = {
-      customerId: currentRecord.id,
-      status: Number(statusUpdateForm.newStatus),
-      progressRemark: statusUpdateForm.progressRemark,
-      data: buildStatusTraceData(
-        getStatusOptionName(currentRecord.status),
-        getStatusOptionName(Number(statusUpdateForm.newStatus)),
-        statusUpdateForm.progressRemark
-      )
-    };
-
-    // 处理extra字段，添加progress_remark
-    let extraObj: Record<string, any> = {};
-    if (currentRecord.extra && typeof currentRecord.extra === "string") {
-      try {
-        extraObj = JSON.parse(String(currentRecord.extra));
-      } catch (error) {
-        console.error("解析extra字段失败:", error);
-      }
-    }
-
-    // 添加progress_remark到extra字段
-    extraObj.progress_remark = statusUpdateForm.progressRemark;
-    updatePayload.extra = JSON.stringify(extraObj);
+    const updatePayload = buildStatusTraceUpdatePayload(
+      currentRecord,
+      Number(statusUpdateForm.newStatus),
+      statusUpdateForm.progressRemark,
+      getStatusOptionName
+    );
 
     // 调用更新API
     await updateCustomerStatusTrace(updatePayload);
@@ -1398,9 +1383,9 @@ const getOptionName = (options: Array<{ value: number | string; name: string }>,
   return resolveCustomerOptionName(options, value, "");
 };
 
-const getStatusOptionName = (value?: number) => resolveCustomerStatusOptionName(statusOption.value, value);
+const getStatusOptionName = (value?: number | null) => resolveCustomerStatusOptionName(statusOption.value, value);
 
-const getIntentionOptionName = (value?: number) => resolveCustomerIntentionOptionName(intentionOption.value, value);
+const getIntentionOptionName = (value?: number | null) => resolveCustomerIntentionOptionName(intentionOption.value, value);
 
 const getCustomerStarOptionName = (value?: number | null) => {
   return resolveCustomerStarOptionName(customerStarOption.value, value);
@@ -1417,15 +1402,7 @@ const getCustomerValidName = (validId?: number) => {
 // 处理星级变化
 const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar: number) => {
   try {
-    // 直接更新星级，不需要弹窗
-    const updatePayload = {
-      customerId: record.id,
-      customerStar: Number(newCustomerStar),
-      data: buildCustomerStarTraceData(
-        getCustomerStarOptionName(record.customerStar),
-        getCustomerStarOptionName(Number(newCustomerStar))
-      )
-    };
+    const updatePayload = buildCustomerStarUpdatePayload(record, Number(newCustomerStar), getCustomerStarOptionName);
     // 调用更新API
     await updateCustomerStatusTrace(updatePayload);
     // 重新加载数据
@@ -1504,34 +1481,13 @@ const handleValidCancel = () => {
 // 更新客户有效性
 const updateCustomerIntention = async (record: SysCustomerData, newIntention: number, validId?: number) => {
   try {
-    // 准备更新数据
-    const updatePayload: any = {
-      customerId: record.id,
-      intention: Number(newIntention),
-      intentionValidId: validId ?? 0,
-      data: buildIntentionTraceData(
-        getIntentionOptionName(record.intention),
-        getIntentionOptionName(Number(newIntention)),
-        getCustomerValidName(validId)
-      )
-    };
-
-    // 处理extra字段，添加对应的reason_id
-    let extraObj: Record<string, any> = {};
-    if (record.extra && typeof record.extra === "string") {
-      try {
-        extraObj = JSON.parse(record.extra);
-      } catch (error) {
-        console.error("解析extra字段失败:", error);
-      }
-    }
-
-    // 统一使用 intention_valid_id 字段存储选择的说明ID
-    if (validId) {
-      extraObj.intention_valid_id = validId;
-    }
-
-    updatePayload.extra = JSON.stringify(extraObj);
+    const updatePayload = buildIntentionTraceUpdatePayload(
+      record,
+      Number(newIntention),
+      getIntentionOptionName,
+      getCustomerValidName,
+      validId
+    );
 
     // 调用更新API
     await updateCustomerStatusTrace(updatePayload);

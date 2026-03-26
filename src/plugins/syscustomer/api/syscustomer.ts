@@ -177,6 +177,7 @@ export interface SysCustomerStatusTraceUpdateParams {
   isRead?: number;
   progressRemark?: string;
   intentionValidId?: number;
+  extra?: string | Record<string, unknown>;
 }
 
 export const getSysCustomerList = (params: SysCustomerListParams) => {

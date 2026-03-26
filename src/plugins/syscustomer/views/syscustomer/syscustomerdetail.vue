@@ -337,7 +337,7 @@
       </div>
       <a-modal
         v-model:visible="statusModalVisible"
-        :title="getStatusModalTitle()"
+        title="更新业务阶段"
         :on-before-ok="handleStatusSaveQuick"
         @cancel="handleStatusCancel"
         :width="420"
@@ -424,7 +424,6 @@
           </template>
         </a-table>
       </a-modal>
-
       <!-- 客户有效性标签编辑弹窗 -->
       <a-modal
         v-model:visible="editValidModalVisible"
@@ -486,7 +485,11 @@ import {
 } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
 import { formatRemarkDisplay } from "../../hooks/remark.ts";
-import { buildCustomerStarTraceData, buildIntentionTraceData, buildStatusTraceData } from "../../hooks/status-trace.ts";
+import {
+  buildCustomerStarUpdatePayload,
+  buildIntentionTraceUpdatePayload,
+  buildStatusTraceUpdatePayload
+} from "../../hooks/status-trace.ts";
 import {
   getCustomerIntentionColor as resolveCustomerIntentionColor,
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
@@ -702,8 +705,8 @@ const getTextByOptions = (options: SelectOption[], value?: number) => {
   return getDictOptionName(options, value, "-");
 };
 
-const getStatusText = (status?: number) => getTextByOptions(props.statusOptions, status);
-const getIntentionText = (intention?: number) => getTextByOptions(props.intentionOptions, intention);
+const getStatusText = (status?: number | null) => getTextByOptions(props.statusOptions, status ?? undefined);
+const getIntentionText = (intention?: number | null) => getTextByOptions(props.intentionOptions, intention ?? undefined);
 const getStarText = (star?: number | null) => {
   return resolveCustomerStarDisplayText({ customerStar: star }, props.starOptions, "未定级");
 };
@@ -771,10 +774,6 @@ const getSinglePieceTypeDisplayText = () => {
 
   const typeName = getSinglePieceTypeText(localCustomer.value?.singlePieceType);
   return `贷款类型：${typeName === "-" ? "未知" : typeName}`;
-};
-
-const getStatusModalTitle = () => {
-  return statusUpdateForm.currentStatus === statusUpdateForm.newStatus ? "添加/修改进度备注" : "更新业务阶段";
 };
 
 const getValidModalTitle = () => {
@@ -1026,17 +1025,13 @@ const handleIntentionSelect = async (value: string | number) => {
 
   if (newIntention === 0) {
     // intention=0 待确认，不弹窗，直接更新
-    if (!localCustomer.value?.id) {
+    const customer = getCurrentCustomerTraceSource();
+    if (!customer) {
       return;
     }
 
     await saveCustomerStatusTracePatch(
-      {
-        customerId: localCustomer.value.id,
-        intention: newIntention,
-        intentionValidId: 0,
-        data: buildIntentionTraceData(getIntentionText(currentIntention), getIntentionText(newIntention))
-      },
+      buildIntentionTraceUpdatePayload(customer, newIntention, getIntentionText, getCustomerValidName),
       "intention",
       `已更新${TOP_FIELD_LABELS.intention}`
     );
@@ -1054,21 +1049,18 @@ const handleIntentionSelect = async (value: string | number) => {
 };
 
 const handleStarSelect = async (value: string | number) => {
-  if (!localCustomer.value?.id) {
+  const customer = getCurrentCustomerTraceSource();
+  if (!customer) {
     return;
   }
 
   const nextValue = Number(value);
-  if (localCustomer.value.customerStar === nextValue) {
+  if (customer.customerStar === nextValue) {
     return;
   }
 
   await saveCustomerStatusTracePatch(
-    {
-      customerId: localCustomer.value.id,
-      customerStar: nextValue,
-      data: buildCustomerStarTraceData(getStarText(localCustomer.value.customerStar), getStarText(nextValue))
-    },
+    buildCustomerStarUpdatePayload(customer, nextValue, getStarText),
     "customerStar",
     `已更新${TOP_FIELD_LABELS.customerStar}`
   );
@@ -1122,6 +1114,15 @@ const loadFollowRecords = async () => {
   }
 };
 
+const getCurrentCustomerTraceSource = () => {
+  const customer = localCustomer.value;
+  if (!customer?.id) {
+    return undefined;
+  }
+
+  return customer as CustomerDetailData & { id: number };
+};
+
 const handleAddRecord = async () => {
   if (!newRecord.value.trim()) {
     Message.warning("请输入跟进内容");
@@ -1154,23 +1155,20 @@ const handleAddRecord = async () => {
 };
 
 const handleStatusSaveQuick = async () => {
-  if (!localCustomer.value?.id) {
+  const customer = getCurrentCustomerTraceSource();
+  if (!customer) {
     Message.error("客户信息不存在");
     return false;
   }
 
   try {
     await saveCustomerStatusTracePatch(
-      {
-        customerId: localCustomer.value.id,
-        status: statusUpdateForm.newStatus,
-        progressRemark: statusUpdateForm.progressRemark,
-        data: buildStatusTraceData(
-          getStatusText(statusUpdateForm.currentStatus),
-          getStatusText(statusUpdateForm.newStatus),
-          statusUpdateForm.progressRemark
-        )
-      },
+      buildStatusTraceUpdatePayload(
+        customer,
+        Number(statusUpdateForm.newStatus),
+        statusUpdateForm.progressRemark,
+        getStatusText
+      ),
       "status",
       `已更新${TOP_FIELD_LABELS.status}`
     );
@@ -1185,7 +1183,8 @@ const handleStatusSaveQuick = async () => {
 };
 
 const handleValidSaveQuick = async () => {
-  if (!localCustomer.value?.id) {
+  const customer = getCurrentCustomerTraceSource();
+  if (!customer) {
     Message.error("客户信息不存在");
     return false;
   }
@@ -1197,16 +1196,13 @@ const handleValidSaveQuick = async () => {
 
   try {
     await saveCustomerStatusTracePatch(
-      {
-        customerId: localCustomer.value.id,
-        intention: validUpdateForm.newIntention,
-        intentionValidId: validUpdateForm.validId,
-        data: buildIntentionTraceData(
-          getIntentionText(validUpdateForm.currentIntention),
-          getIntentionText(validUpdateForm.newIntention),
-          getCustomerValidName(validUpdateForm.validId)
-        )
-      },
+      buildIntentionTraceUpdatePayload(
+        customer,
+        Number(validUpdateForm.newIntention),
+        getIntentionText,
+        getCustomerValidName,
+        validUpdateForm.validId
+      ),
       "intention",
       `已更新${TOP_FIELD_LABELS.intention}`
     );
