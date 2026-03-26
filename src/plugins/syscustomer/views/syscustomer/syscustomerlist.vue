@@ -197,7 +197,16 @@
                 </a-tooltip>
               </template>
             </a-table-column>
-            <a-table-column title="客户编号" data-index="num" :width="200" ellipsis tooltip />
+            <a-table-column title="客户编号" data-index="num" :width="200" ellipsis tooltip>
+              <template #cell="{ record }">
+                <span
+                  :class="['customer-num-link', { 'customer-num-link--unread': Number(record.isRead ?? 0) === 0 }]"
+                  @click="handleViewDetail(record)"
+                >
+                  {{ record.num || "-" }}
+                </span>
+              </template>
+            </a-table-column>
             <a-table-column title="姓名" data-index="name" :width="120" ellipsis tooltip>
               <template #cell="{ record }">
                 {{ record.name || "未命名客户" }}
@@ -1040,6 +1049,44 @@ const handleCreate = () => {
 };
 
 // 查看详情
+const syncCustomerReadState = (customerId: number, isRead: number) => {
+  const target = dataList.value.find(item => item.id === customerId);
+  if (target) {
+    target.isRead = isRead;
+  }
+
+  if (selectedCustomerData.value?.id === customerId) {
+    selectedCustomerData.value = {
+      ...selectedCustomerData.value,
+      isRead
+    };
+  }
+};
+
+const markCustomerAsRead = async (record: SysCustomerData, detailData?: SysCustomerData) => {
+  const currentUserId = Number(userInfo?.id ?? 0);
+  const ownerUserId = Number(detailData?.userId ?? record.userId ?? 0);
+  if (!currentUserId || !ownerUserId || currentUserId !== ownerUserId) {
+    return;
+  }
+
+  const currentIsRead = Number(detailData?.isRead ?? record.isRead ?? 0);
+  if (currentIsRead === 1) {
+    syncCustomerReadState(record.id, 1);
+    return;
+  }
+
+  try {
+    await updateCustomerStatusTrace({
+      customerId: record.id,
+      isRead: 1
+    });
+    syncCustomerReadState(record.id, 1);
+  } catch (error) {
+    console.error("标记客户已读失败:", error);
+  }
+};
+
 const handleViewDetail = async (record: SysCustomerData) => {
   try {
     // 获取详情数据
@@ -1047,6 +1094,7 @@ const handleViewDetail = async (record: SysCustomerData) => {
     selectedCustomerId.value = record.id;
     selectedCustomerData.value = detail.data;
     detailVisible.value = true;
+    void markCustomerAsRead(record, detail.data);
   } catch (error) {
     console.error("获取客户详情失败:", error);
     Message.error("获取客户详情失败");
@@ -1310,7 +1358,7 @@ const handleStatusSave = async () => {
     return true;
   } catch (error) {
     console.error("更新状态失败:", error);
-    Message.error("更新状态失败");
+    // Message.error("更新状态失败");
     return false;
   }
 };
@@ -1422,17 +1470,13 @@ const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar
         getCustomerStarOptionName(Number(newCustomerStar))
       )
     };
-
     // 调用更新API
     await updateCustomerStatusTrace(updatePayload);
-
     // 重新加载数据
     await loadData();
-
     Message.success("星级更新成功");
   } catch (error) {
     console.error("更新星级失败:", error);
-    Message.error("更新星级失败");
   }
 };
 
@@ -1503,7 +1547,7 @@ const handleValidSave = async () => {
     return true;
   } catch (error) {
     console.error("更新客户有效性失败:", error);
-    Message.error("更新客户有效性失败");
+    // Message.error("更新客户有效性失败");
     return false;
   }
 };
@@ -2043,6 +2087,30 @@ onMounted(async () => {
   color: #f53f3f;
   background: #fff7f7;
   border-left: 3px solid #f53f3f;
+}
+
+.customer-num-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #165dff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.customer-num-link:hover {
+  color: #4080ff;
+}
+
+.customer-num-link--unread {
+  color: #f53f3f;
+  font-weight: 600;
+}
+
+.customer-num-link--unread:hover {
+  color: #f77272;
 }
 
 :deep(.arco-table-th.arco-table-operation.arco-table-expand),

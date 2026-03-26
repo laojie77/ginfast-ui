@@ -900,7 +900,7 @@ const saveCustomerPatch = async (patch: CustomerDetailData, fieldKey: string, su
   } catch (error) {
     console.error(`更新${fieldKey}失败:`, error);
     syncLocalCustomer(previousCustomer);
-    Message.error(`${successText}失败`);
+    // Message.error(`${successText}失败`);
     return false;
   } finally {
     savingField.value = "";
@@ -1013,7 +1013,7 @@ const saveCustomerStatusTracePatch = async (
     Message.success(successText);
   } catch (error) {
     console.error(`更新${fieldKey}失败:`, error);
-    Message.error(`${successText}失败`);
+    // Message.error(`${successText}失败`);
     throw error;
   } finally {
     savingField.value = "";
@@ -1175,72 +1175,9 @@ const handleAddRecord = async () => {
     Message.success("跟进记录添加成功");
   } catch (error) {
     console.error("添加跟进记录失败:", error);
-    Message.error("添加跟进记录失败");
+    // Message.error("添加跟进记录失败");
   } finally {
     addingRecord.value = false;
-  }
-};
-
-const handleStatusSave = async () => {
-  if (!localCustomer.value?.id) {
-    Message.error("客户信息不存在");
-    return false;
-  }
-
-  try {
-    // 更新状态
-    if (statusUpdateForm.newStatus !== undefined) {
-      await handleTopFieldChange("status", statusUpdateForm.newStatus);
-    }
-
-    // 更新进度备注
-    const extraObj = parseExtra(localCustomer.value.extra);
-    if (statusUpdateForm.progressRemark.trim()) {
-      extraObj.progress_remark = statusUpdateForm.progressRemark.trim();
-    } else {
-      delete extraObj.progress_remark;
-    }
-
-    await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "progress_remark", "已更新进度备注");
-
-    statusModalVisible.value = false;
-    return true;
-  } catch (error) {
-    console.error("保存业务阶段失败:", error);
-    Message.error("保存业务阶段失败");
-    return false;
-  }
-};
-
-const handleValidSave = async () => {
-  if (!localCustomer.value?.id) {
-    Message.error("客户信息不存在");
-    return false;
-  }
-
-  if (!validUpdateForm.validId) {
-    Message.error("请选择有效说明");
-    return false;
-  }
-
-  try {
-    // 更新客户有效性
-    if (validUpdateForm.newIntention !== undefined) {
-      await handleTopFieldChange("intention", validUpdateForm.newIntention);
-    }
-
-    // 更新有效说明ID
-    const extraObj = parseExtra(localCustomer.value.extra);
-    extraObj.intention_valid_id = validUpdateForm.validId;
-
-    await saveCustomerPatch({ extra: JSON.stringify(extraObj) }, "intention_valid_id", "已更新有效说明");
-
-    validModalVisible.value = false;
-    return true;
-  } catch (error) {
-    console.error("保存客户有效失败:", error);
-    Message.error("保存客户有效失败");
-    return false;
   }
 };
 
@@ -1270,7 +1207,7 @@ const handleStatusSaveQuick = async () => {
     return true;
   } catch (error) {
     console.error("保存业务阶段失败:", error);
-    Message.error("保存业务阶段失败");
+    // Message.error("保存业务阶段失败");
     return false;
   }
 };
@@ -1306,13 +1243,11 @@ const handleValidSaveQuick = async () => {
     return true;
   } catch (error) {
     console.error("保存客户有效失败:", error);
-    Message.error("保存客户有效失败");
+    // Message.error("保存客户有效失败");
     return false;
   }
 };
 
-void handleStatusSave;
-void handleValidSave;
 
 const handleStatusCancel = () => {
   statusModalVisible.value = false;
@@ -1384,7 +1319,7 @@ const handleDeleteValid = async (id: number) => {
     }
   } catch (error) {
     console.error("删除失败:", error);
-    Message.error("删除失败");
+    // Message.error("删除失败");
   }
 };
 
@@ -1424,7 +1359,7 @@ const handleSaveValid = async () => {
     return true;
   } catch (error) {
     console.error("保存失败:", error);
-    Message.error("保存失败");
+    // Message.error("保存失败");
     return false;
   }
 };
@@ -1466,7 +1401,7 @@ const handleToggleLock = async () => {
     emit("updated", localCustomer.value);
   } catch (error) {
     console.error("切换锁定状态失败:", error);
-    Message.error("切换锁定状态失败");
+    // Message.error("切换锁定状态失败");
   }
 };
 

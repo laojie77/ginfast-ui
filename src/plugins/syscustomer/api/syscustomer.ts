@@ -174,6 +174,7 @@ export interface SysCustomerStatusTraceUpdateParams {
   status?: number;
   intention?: number;
   customerStar?: number | null;
+  isRead?: number;
   progressRemark?: string;
   intentionValidId?: number;
 }
