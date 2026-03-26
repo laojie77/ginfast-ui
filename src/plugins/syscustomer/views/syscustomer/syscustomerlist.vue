@@ -728,7 +728,6 @@ import { useCustomerDepartmentScope } from "../../hooks/department.ts";
 const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app.ts";
-import type { DivisionItem } from "@/api/department";
 import { useSysConfigStore } from "@/store/modules/sys-config"; // 系统配置store
 const userInfo = getLocalStorage<any>(UserInfoKey);
 const listScene = "all" as const;
@@ -778,9 +777,6 @@ const {
   loadFollowerOptionsForSearch,
   getDepartmentName
 } = useCustomerDepartmentScope(userInfo);
-
-// 跟进人列表数据
-// 获取部门树数据
 
 // 弹窗布局配置
 const layoutMode = computed(() => {
@@ -920,7 +916,6 @@ const editingData = reactive<Partial<SysCustomerData>>({
   isQuit: undefined,
   isRepeat: undefined,
   isRubbish: undefined,
-  remarkTime: undefined,
   dispatchTime: undefined,
   isRemind: undefined,
   isSms: undefined,
@@ -1032,7 +1027,6 @@ const handleCreate = () => {
     isQuit: undefined,
     isRepeat: undefined,
     isRubbish: undefined,
-    remarkTime: undefined,
     dispatchTime: undefined,
     isRemind: undefined,
     isSms: undefined,
@@ -1685,7 +1679,6 @@ const fetchChannelData = async () => {
     const params: SysChannelCompanyListParams = {
       pageNum: 1,
       pageSize: 1000 // 设置较大的页面大小以获取所有数据
-      // 后端会自动根据当前租户过滤数据
     };
 
     const response = await getSysChannelCompanyList(params);

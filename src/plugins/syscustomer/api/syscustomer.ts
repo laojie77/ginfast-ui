@@ -59,7 +59,6 @@ export interface SysCustomerData {
   isQuit: number;
   isRepeat: number;
   isRubbish: number;
-  remarkTime: string;
   dispatchTime: string;
   isRemind: number;
   isSms: number;
@@ -154,7 +153,6 @@ export interface SysCustomerListParams {
   isQuit?: number;
   isRepeat?: number;
   isRubbish?: number;
-  remarkTime?: string;
   dispatchTime?: string;
   isRemind?: number;
   isSms?: number;
