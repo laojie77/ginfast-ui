@@ -287,129 +287,39 @@
           </div>
         </div>
       </div>
-      <a-modal
-        v-model:visible="statusModalVisible"
-        title="更新业务阶段"
-        :on-before-ok="handleStatusSaveQuick"
-        @cancel="handleStatusCancel"
-        :width="420"
-      >
-        <a-form :model="statusUpdateForm">
-          <a-form-item :label="TOP_FIELD_LABELS.status">
-            <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus)">
-              {{ getStatusText(statusUpdateForm.newStatus) }}
-            </a-tag>
-          </a-form-item>
-          <a-form-item label="备注">
-            <a-textarea v-model="statusUpdateForm.progressRemark" placeholder="请输入进度备注" :rows="4" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
-
-      <a-modal
-        v-model:visible="validModalVisible"
-        :title="getValidModalTitle()"
-        :on-before-ok="handleValidSaveQuick"
-        @cancel="handleValidCancel"
-        :width="600"
-      >
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-          <span style="font-weight: 500">{{ getValidModalTitle() }}</span>
-          <a-button
-            type="text"
-            @click="handleManageValid"
-            style="color: #165dff"
-            v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-            >管理</a-button
-          >
-        </div>
-        <a-form :model="validUpdateForm" ref="validFormRef">
-          <a-form-item
-            field="validId"
-            :label="getValidModalTitle()"
-            :rules="[{ required: true, message: `请选择${getValidModalTitle()}` }]"
-          >
-            <a-select v-model="validUpdateForm.validId" :placeholder="`请选择${getValidModalTitle()}`" allow-clear>
-              <a-option v-for="item in customerValidOptions" :key="item.id" :value="item.id">{{ item.name }}</a-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-      </a-modal>
-
-      <!-- 客户有效性标签管理弹窗 -->
-      <a-modal v-model:visible="manageValidModalVisible" :title="getValidModalTitle() + '管理'" :footer="false" :width="800">
-        <div style="margin-bottom: 16px">
-          <a-button type="primary" @click="handleCreateValid">
-            <template #icon>
-              <icon-plus />
-            </template>
-            新增
-          </a-button>
-        </div>
-        <a-table :data="customerValidList" :loading="validLoading" :pagination="false" :bordered="{ wrapper: true, cell: true }">
-          <template #columns>
-            <a-table-column title="类型" data-index="type" :width="100">
-              <template #cell="{ record }">
-                <a-tag size="small">
-                  {{ record.type === 1 ? "有效客户" : record.type === 2 ? "无效客户" : record.type === 3 ? "黑名单" : "未知" }}
-                </a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column title="名称" data-index="name" />
-            <a-table-column title="状态" data-index="status" :width="100">
-              <template #cell="{ record }">
-                <a-tag size="small" :color="record.status === 1 ? 'green' : 'red'">
-                  {{ record.status === 1 ? "启用" : "禁用" }}
-                </a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column title="操作" :width="150">
-              <template #cell="{ record }">
-                <a-space>
-                  <a-button size="small" @click="handleEditValid(record)">编辑</a-button>
-                  <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDeleteValid(record.id)">
-                    <a-button size="small" status="danger">删除</a-button>
-                  </a-popconfirm>
-                </a-space>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-modal>
-      <!-- 客户有效性标签编辑弹窗 -->
-      <a-modal
-        v-model:visible="editValidModalVisible"
-        :title="editingValid.id ? `编辑${getValidModalTitle()}` : `新增${getValidModalTitle()}`"
-        :on-before-ok="handleSaveValid"
-        @cancel="handleCancelEditValid"
-        :width="400"
-      >
-        <a-form :model="editingValid" :rules="validRules" ref="editValidFormRef">
-          <a-form-item label="类型">
-            <a-input
-              :model-value="
-                editingValid.type === 1
-                  ? '有效客户'
-                  : editingValid.type === 2
-                    ? '无效客户'
-                    : editingValid.type === 3
-                      ? '黑名单'
-                      : '未知'
-              "
-              disabled
-            />
-          </a-form-item>
-          <a-form-item field="name" label="名称">
-            <a-input v-model="editingValid.name" placeholder="请输入名称" />
-          </a-form-item>
-          <a-form-item field="status" label="状态">
-            <a-select v-model="editingValid.status" placeholder="请选择状态">
-              <a-option :value="1">启用</a-option>
-              <a-option :value="0">禁用</a-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-      </a-modal>
+      <CustomerTraceManageModals
+        :status-modal-visible="statusModalVisible"
+        :valid-modal-visible="validModalVisible"
+        :manage-valid-modal-visible="manageValidModalVisible"
+        :edit-valid-modal-visible="editValidModalVisible"
+        :status-update-form="statusUpdateForm"
+        :valid-update-form="validUpdateForm"
+        :valid-modal-title="getValidModalTitle()"
+        :status-label="TOP_FIELD_LABELS.status"
+        :status-tag-text="getStatusText(statusUpdateForm.newStatus)"
+        :status-tag-color="getStatusColor(statusUpdateForm.newStatus)"
+        :status-modal-width="420"
+        :customer-valid-options="customerValidOptions"
+        :valid-loading="validLoading"
+        :customer-valid-list="customerValidList"
+        :editing-valid="editingValid"
+        :valid-rules="validRules"
+        :on-status-save="handleStatusSaveQuick"
+        :on-status-cancel="handleStatusCancel"
+        :on-valid-save="handleValidSaveQuick"
+        :on-valid-cancel="handleValidCancel"
+        :on-manage-valid="handleManageValid"
+        :on-close-manage-valid="closeManageValidModal"
+        :on-create-valid="handleCreateValid"
+        :on-edit-valid="handleEditValid"
+        :on-delete-valid="handleDeleteValid"
+        :on-save-valid-item="handleSaveValid"
+        :on-cancel-edit-valid="handleCancelEditValid"
+        @update:status-progress-remark="value => (statusUpdateForm.progressRemark = value)"
+        @update:valid-id="value => (validUpdateForm.validId = value)"
+        @update:editing-valid-name="value => (editingValid.name = value)"
+        @update:editing-valid-status="value => (editingValid.status = value)"
+      />
     </a-drawer>
   </div>
 </template>
@@ -428,6 +338,7 @@ import {
 } from "../../api/syscustomer";
 import { handleUrl } from "@/utils/app";
 import CustomerOptionDropdownTag from "../../components/customer-option-dropdown-tag.vue";
+import CustomerTraceManageModals from "../../components/customer-trace-manage-modals.vue";
 import { formatRemarkDisplay } from "../../hooks/remark.ts";
 import {
   ALL_EXTRA_PROPERTIES,
@@ -536,7 +447,6 @@ const editingField = ref<InlineEditableField>();
 const editingValue = ref<string | undefined>("");
 const inlineEditSubmittingField = ref<InlineEditableField>();
 const extraForm = reactive<Record<string, string>>({});
-const validFormRef = ref();
 const {
   customerValidOptions,
   allCustomerValidOptionsMap,
@@ -578,12 +488,12 @@ const {
 const {
   manageValidModalVisible,
   editValidModalVisible,
-  editValidFormRef,
   validLoading,
   customerValidList,
   editingValid,
   validRules,
   openManageValidModal: handleManageValid,
+  closeManageValidModal,
   openCreateValid: handleCreateValid,
   openEditValid: handleEditValid,
   deleteValidItem: handleDeleteValid,
@@ -645,6 +555,13 @@ const getSinglePieceTypeText = (type?: number) => getTextByOptions(props.singleP
 const getChannelName = (channelId?: number) => getTextByOptions(props.channelOptions, channelId);
 const getFollowerName = (userId?: number) => getTextByOptions(props.followerOptions, userId);
 const getFromText = (from?: number | null) => getTextByOptions(fromOption.value, from ?? undefined);
+const getFollowerDisplayName = () => {
+  const userName = localCustomer.value?.userName;
+  if (userName !== undefined && userName !== null) {
+    return String(userName);
+  }
+  return getFollowerName(localCustomer.value?.userId);
+};
 
 const getDepartmentName = (deptId?: number) => {
   if (!deptId || !props.departmentTree.length) return "-";
@@ -719,7 +636,7 @@ const getExtraPropertyOptions = (property: CustomerExtraProperty) => {
 };
 
 const summaryItems = computed<SummaryItem[]>(() => [
-  { label: "跟进人", value: getFollowerName(localCustomer.value?.userId) },
+  { label: "跟进人", value: getFollowerDisplayName() },
   { label: "渠道来源", value: getChannelName(localCustomer.value?.channelId) },
   { label: "所属部门", value: getDepartmentName(localCustomer.value?.deptId) },
   { label: "所在城市", value: localCustomer.value?.city || "-" },
@@ -1060,8 +977,8 @@ const handleStatusSaveQuick = async () => {
   }
 };
 
-const handleValidSaveQuick = async () => {
-  const isValid = await validFormRef.value?.validate();
+const handleValidSaveQuick = async (formInstance?: { validate?: () => Promise<unknown> }) => {
+  const isValid = await formInstance?.validate?.();
   if (isValid) {
     return false;
   }
@@ -1089,26 +1006,10 @@ const handleToggleLock = async () => {
     return;
   }
 
-  try {
-    const newLockStatus = localCustomer.value.isLock === 1 ? 0 : 1;
+  const newLockStatus = localCustomer.value.isLock === 1 ? 0 : 1;
+  const successText = newLockStatus === 1 ? `已锁定客户：${localCustomer.value.name}` : `已解锁客户：${localCustomer.value.name}`;
 
-    // 更新本地数据
-    localCustomer.value.isLock = newLockStatus;
-
-    // 调用API更新数据 - 传递完整的对象而不是单独的参数
-    await updateSysCustomer({ ...localCustomer.value, isLock: newLockStatus });
-
-    if (newLockStatus === 1) {
-      Message.success(`已锁定客户：${localCustomer.value.name}`);
-    } else {
-      Message.success(`已解锁客户：${localCustomer.value.name}`);
-    }
-
-    // 通知父组件数据已更新
-    emit("updated", localCustomer.value);
-  } catch (error) {
-    console.error("切换锁定状态失败:", error);
-  }
+  await saveCustomerPatch({ isLock: newLockStatus }, "isLock", successText);
 };
 
 const handleClose = () => {
@@ -1125,34 +1026,33 @@ watch(
 );
 
 watch(
-  () => props.customerId,
-  customerId => {
-    if (customerId && props.visible) {
-      loadFollowRecords();
+  [() => props.visible, () => props.customerId],
+  async ([drawerVisible, customerId], [previousVisible, previousCustomerId]) => {
+    if (!drawerVisible) {
+      return;
     }
-  },
-  { immediate: true }
-);
 
-watch(
-  () => props.visible,
-  async drawerVisible => {
-    if (drawerVisible) {
-      if (!Object.keys(CUSTOMER_EXTRA_OPTIONS.value).length) {
-        try {
-          await sysConfigStore.getConfig();
-        } catch (error) {
-          console.error("加载资质配置失败:", error);
-        }
-      }
+    const openedDrawer = drawerVisible && !previousVisible;
+    const customerChanged = customerId !== previousCustomerId;
 
-      if (props.customerId) {
-        await loadFollowRecords();
+    if (openedDrawer && !Object.keys(CUSTOMER_EXTRA_OPTIONS.value).length) {
+      try {
+        await sysConfigStore.getConfig();
+      } catch (error) {
+        console.error("加载资质配置失败:", error);
       }
+    }
+
+    if (customerId && (openedDrawer || customerChanged)) {
+      await loadFollowRecords();
+    }
+
+    if (openedDrawer) {
       await loadAllCustomerValidOptions();
       scrollMessagesToBottom();
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
 

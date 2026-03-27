@@ -2,7 +2,16 @@ import { http } from "@/utils/http";
 import { baseUrlApi } from "@/api/utils";
 import type { BaseResult } from "@/api/types";
 
-export type CustomerListScene = "all" | "public" | "exchange" | "reassign" | "locked";
+export type CustomerListScene =
+  | "all"
+  | "my"
+  | "public"
+  | "exchange"
+  | "reassign"
+  | "locked"
+  | "intention2"
+  | "intention3"
+  | "status0";
 
 export interface SysCustomerTraceData {
   id?: number | string;

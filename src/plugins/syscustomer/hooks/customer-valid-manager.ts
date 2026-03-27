@@ -22,6 +22,10 @@ interface UseCustomerValidManagerOptions {
   reloadSelectableOptions?: (type?: number) => AsyncOrSync<void>;
 }
 
+interface FormInstanceLike {
+  validate?: () => Promise<unknown>;
+}
+
 const createDefaultEditingValid = (type = 1): Partial<CustomerValidData> => ({
   id: undefined,
   type,
@@ -78,6 +82,10 @@ export const useCustomerValidManager = (options: UseCustomerValidManagerOptions)
     manageValidModalVisible.value = true;
   };
 
+  const closeManageValidModal = () => {
+    manageValidModalVisible.value = false;
+  };
+
   const openCreateValid = () => {
     resetEditingValid();
     editValidModalVisible.value = true;
@@ -99,8 +107,9 @@ export const useCustomerValidManager = (options: UseCustomerValidManagerOptions)
     }
   };
 
-  const saveValidItem = async () => {
-    const validationResult = await editValidFormRef.value?.validate?.();
+  const saveValidItem = async (formInstance?: FormInstanceLike) => {
+    const validationTarget = formInstance ?? editValidFormRef.value;
+    const validationResult = await validationTarget?.validate?.();
     if (validationResult) {
       return false;
     }
@@ -139,6 +148,7 @@ export const useCustomerValidManager = (options: UseCustomerValidManagerOptions)
     validRules,
     loadCustomerValidListByType,
     openManageValidModal,
+    closeManageValidModal,
     openCreateValid,
     openEditValid,
     deleteValidItem,

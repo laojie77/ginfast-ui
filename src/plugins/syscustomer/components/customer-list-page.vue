@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="snow-page">
     <div class="snow-inner">
       <a-card :loading="loading" :bordered="false">
@@ -42,8 +42,8 @@
               <a-form-item field="userId" label="跟进人">
                 <a-select v-model="searchForm.userId" placeholder="请选择跟进人" allow-clear>
                   <a-option v-for="item in followerOptions" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -52,8 +52,8 @@
               <a-form-item field="customerStar" label="星级">
                 <a-select v-model="searchForm.customerStar" placeholder="星级" allow-clear>
                   <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -70,8 +70,8 @@
               <a-form-item field="intention" label="客户有效">
                 <a-select v-model="searchForm.intention" placeholder="客户有效" allow-clear>
                   <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -80,8 +80,8 @@
               <a-form-item field="singlePieceType" label="贷款类型">
                 <a-select v-model="searchForm.singlePieceType" placeholder="贷款类型" allow-clear>
                   <a-option v-for="item in singlePieceTypeOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -108,8 +108,8 @@
               <a-form-item field="isReassign" label="再分配">
                 <a-select v-model="searchForm.isReassign" placeholder="再分配" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -118,8 +118,8 @@
               <a-form-item field="isQuit" label="离职数据">
                 <a-select v-model="searchForm.isQuit" placeholder="离职数据" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -128,8 +128,8 @@
               <a-form-item field="isRepeat" label="重复标记">
                 <a-select v-model="searchForm.isRepeat" placeholder="重复标记" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -138,8 +138,8 @@
               <a-form-item field="starStatus" label="星级回传">
                 <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
                   <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -159,7 +159,7 @@
               <a-space wrap>
                 <a-button type="primary" @click="handleSearch">查询</a-button>
                 <a-button @click="handleReset">重置</a-button>
-                <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:syscustomersyscustomer:add']">
+                <a-button v-if="props.showCreateAction" type="primary" @click="handleCreate" v-hasPerm="props.createPermission">
                   <template #icon>
                     <icon-plus />
                   </template>
@@ -259,7 +259,7 @@
             </a-table-column>
             <a-table-column title="跟进人" data-index="userName" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ followerOptions.find(item => item.value === record.userId)?.name || "" }}
+                {{ record.userName || followerOptions.find(item => item.value === record.userId)?.name || "" }}
               </template>
             </a-table-column>
             <a-table-column title="金额" data-index="moneyDemand" :width="80" ellipsis tooltip />
@@ -333,19 +333,12 @@
             <a-table-column title="操作" :width="200" :fixed="isMobile ? undefined : 'right'">
               <template #cell="{ record }">
                 <a-space>
-                  <a-button
-                    size="small"
-                    type="primary"
-                    @click="handleViewDetail(record)"
-                    v-hasPerm="['plugins:syscustomersyscustomer:edit']"
-                  >
+                  <a-button size="small" type="primary" @click="handleViewDetail(record)" v-hasPerm="props.detailPermission">
                     详情
                   </a-button>
-                  <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:syscustomersyscustomer:edit']">
-                    编辑
-                  </a-button>
+                  <a-button size="small" @click="handleEdit(record)" v-hasPerm="props.editPermission"> 编辑 </a-button>
                   <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.id)">
-                    <a-button size="small" status="danger" v-hasPerm="['plugins:syscustomersyscustomer:delete']"> 删除 </a-button>
+                    <a-button size="small" status="danger" v-hasPerm="props.deletePermission"> 删除 </a-button>
                   </a-popconfirm>
                 </a-space>
               </template>
@@ -433,8 +426,8 @@
                   <a-form-item field="channelId" label="渠道来源">
                     <a-select v-model="editingData.channelId" placeholder="请选择渠道来源" allow-clear size="large">
                       <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -472,8 +465,8 @@
                   <a-form-item field="customerStar" label="客户星级" class="editor-compact-item">
                     <a-select v-model="editingData.customerStar" placeholder="请选择客户星级" allow-clear>
                       <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -481,8 +474,8 @@
                   <a-form-item field="status" label="业务阶段" class="editor-compact-item">
                     <a-select v-model="editingData.status" placeholder="请选择业务阶段" allow-clear>
                       <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -490,8 +483,8 @@
                   <a-form-item field="intention" label="客户有效" class="editor-compact-item">
                     <a-select v-model="editingData.intention" placeholder="请选择客户有效状态" allow-clear>
                       <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -553,133 +546,38 @@
           </a-form>
         </div>
       </a-modal>
-
-      <!-- 状态更新弹窗 -->
-      <a-modal
-        v-model:visible="statusModalVisible"
-        title="更新业务阶段"
-        :on-before-ok="handleStatusSave"
-        @cancel="handleStatusCancel"
-        :width="400"
-      >
-        <a-form :model="statusUpdateForm" ref="statusFormRef">
-          <a-form-item label="新状态">
-            <a-tag size="small" :color="getStatusColor(statusUpdateForm.newStatus ?? 0)">
-              {{ statusOption.find(item => Number(item.value) === statusUpdateForm.newStatus)?.name }}
-            </a-tag>
-          </a-form-item>
-          <a-form-item field="progressRemark" label="备注">
-            <a-textarea v-model="statusUpdateForm.progressRemark" placeholder="请输入进度备注" :rows="4" />
-          </a-form-item>
-        </a-form>
-      </a-modal>
-
-      <!-- 客户有效性标签选择弹窗 -->
-      <a-modal
-        v-model:visible="validModalVisible"
-        :title="getValidModalTitle()"
-        :on-before-ok="handleValidSave"
-        @cancel="handleValidCancel"
-        :width="600"
-      >
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px">
-          <span style="font-weight: 500">{{ getValidModalTitle() }}</span>
-          <a-button
-            type="text"
-            @click="handleManageValid"
-            style="color: #165dff"
-            v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-          >管理</a-button
-          >
-        </div>
-        <a-form :model="validUpdateForm" ref="validFormRef">
-          <a-form-item
-            field="validId"
-            :label="getValidModalTitle()"
-            :rules="[{ required: true, message: `请选择${getValidModalTitle()}` }]"
-          >
-            <a-select v-model="validUpdateForm.validId" :placeholder="`请选择${getValidModalTitle()}`" allow-clear>
-              <a-option v-for="item in customerValidOptions" :key="item.id" :value="item.id">{{ item.name }}</a-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-      </a-modal>
-
-      <!-- 客户有效性标签管理弹窗 -->
-      <a-modal v-model:visible="manageValidModalVisible" :title="getValidModalTitle() + '管理'" :footer="false" :width="800">
-        <div style="margin-bottom: 16px">
-          <a-button type="primary" @click="handleCreateValid">
-            <template #icon>
-              <icon-plus />
-            </template>
-            新增
-          </a-button>
-        </div>
-        <a-table :data="customerValidList" :loading="validLoading" :pagination="false" :bordered="{ wrapper: true, cell: true }">
-          <template #columns>
-            <a-table-column title="类型" data-index="type" :width="100">
-              <template #cell="{ record }">
-                <a-tag size="small">
-                  {{ record.type === 1 ? "有效客户" : record.type === 2 ? "无效客户" : record.type === 3 ? "黑名单" : "未知" }}
-                </a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column title="名称" data-index="name" />
-            <a-table-column title="状态" data-index="status" :width="100">
-              <template #cell="{ record }">
-                <a-tag size="small" :color="record.status === 1 ? 'green' : 'red'">
-                  {{ record.status === 1 ? "启用" : "禁用" }}
-                </a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column title="操作" :width="150">
-              <template #cell="{ record }">
-                <a-space>
-                  <a-button size="small" @click="handleEditValid(record)">编辑</a-button>
-                  <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDeleteValid(record.id)">
-                    <a-button size="small" status="danger">删除</a-button>
-                  </a-popconfirm>
-                </a-space>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-modal>
-
-      <!-- 客户有效性标签编辑弹窗 -->
-      <a-modal
-        v-model:visible="editValidModalVisible"
-        :title="editingValid.id ? `编辑${getValidModalTitle()}` : `新增${getValidModalTitle()}`"
-        :on-before-ok="handleSaveValid"
-        @cancel="handleCancelEditValid"
-        :width="400"
-      >
-        <a-form :model="editingValid" :rules="validRules" ref="editValidFormRef">
-          <a-form-item label="类型">
-            <a-input
-              :model-value="
-                editingValid.type === 1
-                  ? '有效客户'
-                  : editingValid.type === 2
-                    ? '无效客户'
-                    : editingValid.type === 3
-                      ? '黑名单'
-                      : '未知'
-              "
-              disabled
-            />
-          </a-form-item>
-          <a-form-item field="name" label="名称">
-            <a-input v-model="editingValid.name" placeholder="请输入名称" />
-          </a-form-item>
-          <a-form-item field="status" label="状态">
-            <a-radio-group v-model="editingValid.status">
-              <a-radio :value="1">启用</a-radio>
-              <a-radio :value="0">禁用</a-radio>
-            </a-radio-group>
-          </a-form-item>
-        </a-form>
-      </a-modal>
+      <!--      客户状态弹窗-->
+      <CustomerTraceManageModals
+        :status-modal-visible="statusModalVisible"
+        :valid-modal-visible="validModalVisible"
+        :manage-valid-modal-visible="manageValidModalVisible"
+        :edit-valid-modal-visible="editValidModalVisible"
+        :status-update-form="statusUpdateForm"
+        :valid-update-form="validUpdateForm"
+        :valid-modal-title="getValidModalTitle()"
+        :status-tag-text="statusOption.find(item => Number(item.value) === statusUpdateForm.newStatus)?.name || '-'"
+        :status-tag-color="getStatusColor(statusUpdateForm.newStatus ?? 0)"
+        :customer-valid-options="customerValidOptions"
+        :valid-loading="validLoading"
+        :customer-valid-list="customerValidList"
+        :editing-valid="editingValid"
+        :valid-rules="validRules"
+        :on-status-save="handleStatusSave"
+        :on-status-cancel="handleStatusCancel"
+        :on-valid-save="handleValidSave"
+        :on-valid-cancel="handleValidCancel"
+        :on-manage-valid="handleManageValid"
+        :on-close-manage-valid="closeManageValidModal"
+        :on-create-valid="handleCreateValid"
+        :on-edit-valid="handleEditValid"
+        :on-delete-valid="handleDeleteValid"
+        :on-save-valid-item="handleSaveValid"
+        :on-cancel-edit-valid="handleCancelEditValid"
+        @update:status-progress-remark="value => (statusUpdateForm.progressRemark = value)"
+        @update:valid-id="value => (validUpdateForm.validId = value)"
+        @update:editing-valid-name="value => (editingValid.name = value)"
+        @update:editing-valid-status="value => (editingValid.status = value)"
+      />
     </div>
 
     <!-- 客户详情抽屉 -->
@@ -704,19 +602,25 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
-import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
+import { useSysCustomerPluginHook } from "../hooks/syscustomer.ts";
+import type { CustomerListScene, SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../api/syscustomer.ts";
 import { formatTime } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
-import { verifyPhone } from "@/utils/verify-tools";
-import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
-import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../../syschannelcompany/api/syschannelcompany";
-import SysCustomerDetail from "./syscustomerdetail.vue";
-import CustomerOptionDropdownTag from "../../components/customer-option-dropdown-tag.vue";
-import { buildCustomerListParams, createCustomerSearchForm, resetCustomerSearchForm } from "../../hooks/list-query.ts";
-import { formatCustomerRemarkDisplay } from "../../hooks/remark.ts";
-import { ALL_EXTRA_PROPERTIES, EXTRA_PROPERTY_LABELS } from "../../hooks/customer-fields.ts";
-import { useCustomerDepartmentScope } from "../../hooks/department.ts";
+import { verifyPhone } from "@/utils/verify-tools.ts";
+import { getSysChannelCompanyList } from "../../syschannelcompany/api/syschannelcompany.ts";
+import type { SysChannelCompanyData, SysChannelCompanyListParams } from "../../syschannelcompany/api/syschannelcompany.ts";
+import SysCustomerDetail from "../views/syscustomer/syscustomerdetail.vue";
+import CustomerOptionDropdownTag from "./customer-option-dropdown-tag.vue";
+import CustomerTraceManageModals from "./customer-trace-manage-modals.vue";
+import {
+  buildCustomerListParams,
+  createCustomerSearchForm,
+  resetCustomerSearchForm,
+  type CustomerListSearchForm
+} from "../hooks/list-query.ts";
+import { formatCustomerRemarkDisplay } from "../hooks/remark.ts";
+import { ALL_EXTRA_PROPERTIES, EXTRA_PROPERTY_LABELS } from "../hooks/customer-fields.ts";
+import { useCustomerDepartmentScope } from "../hooks/department.ts";
 import {
   getCustomerIntentionColor as resolveCustomerIntentionColor,
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
@@ -729,15 +633,40 @@ import {
   getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
   getCustomerStatusOptionName as resolveCustomerStatusOptionName,
   useCustomerValidOptions
-} from "../../hooks/customer-status.ts";
-import { useCustomerTraceActions } from "../../hooks/customer-trace-actions.ts";
-import { useCustomerValidManager } from "../../hooks/customer-valid-manager.ts";
+} from "../hooks/customer-status.ts";
+import { useCustomerTraceActions } from "../hooks/customer-trace-actions.ts";
+import { useCustomerValidManager } from "../hooks/customer-valid-manager.ts";
 const { isMobile } = useDevicesSize();
-import { UserInfoKey } from "@/utils/auth";
+import { UserInfoKey } from "@/utils/auth.ts";
 import { getLocalStorage } from "@/utils/app.ts";
-import { useSysConfigStore } from "@/store/modules/sys-config"; // 系统配置store
+import { useSysConfigStore } from "@/store/modules/sys-config.ts"; // 系统配置store
+
+interface Props {
+  scene?: CustomerListScene;
+  presetSearchForm?: Partial<CustomerListSearchForm>;
+  showCreateAction?: boolean;
+  createPermission?: string[];
+  editPermission?: string[];
+  deletePermission?: string[];
+  detailPermission?: string[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  scene: "all",
+  presetSearchForm: () => ({}),
+  showCreateAction: true,
+  createPermission: () => ["plugins:syscustomersyscustomer:add"],
+  editPermission: () => ["plugins:syscustomersyscustomer:edit"],
+  detailPermission: () => ["plugins:syscustomersyscustomer:detail"],
+  deletePermission: () => ["plugins:syscustomersyscustomer:delete"]
+});
+
 const userInfo = getLocalStorage<any>(UserInfoKey);
-const listScene = "public" as const;
+
+// scene + presetSearchForm 是列表母版最重要的两个扩展点：
+// 1. scene 走后端的默认业务场景筛选
+// 2. presetSearchForm 用于前端额外固化某些查询条件
+const buildPageSearchForm = () => Object.assign(createCustomerSearchForm(), props.presetSearchForm);
 
 // 客户资质选项配置（从系统配置store获取）
 const sysConfigStore = useSysConfigStore();
@@ -800,12 +729,6 @@ const {
 const modalVisible = ref(false);
 const formRef = ref();
 
-// 状态更新相关
-const statusFormRef = ref();
-
-// 客户有效性标签相关
-const validFormRef = ref();
-
 // 客户有效性标签管理相关
 const {
   customerValidOptions,
@@ -854,18 +777,18 @@ const detailVisible = ref(false);
 const selectedCustomerId = ref<number>();
 const selectedCustomerData = ref<SysCustomerData>();
 
-// 搜索表单
-const searchForm = reactive(createCustomerSearchForm());
+// 搜索表单会在默认模型的基础上叠加 presetSearchForm，保证不同页面共用同一份母版时仍能保留各自语义。
+const searchForm = reactive(buildPageSearchForm());
 
 const {
   manageValidModalVisible,
   editValidModalVisible,
-  editValidFormRef,
   validLoading,
   customerValidList,
   editingValid,
   validRules,
   openManageValidModal: handleManageValid,
+  closeManageValidModal,
   openCreateValid: handleCreateValid,
   openEditValid: handleEditValid,
   deleteValidItem: handleDeleteValid,
@@ -965,7 +888,7 @@ const commentExpandedKeys = computed(() =>
 
 // 获取数据列表
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
-  const params = buildCustomerListParams(searchForm, { pageNum, pageSize: pageSizeVal }, listScene);
+  const params = buildCustomerListParams(searchForm, { pageNum, pageSize: pageSizeVal }, props.scene);
   await fetchDataList(params);
 };
 
@@ -987,6 +910,7 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   resetCustomerSearchForm(searchForm);
+  Object.assign(searchForm, props.presetSearchForm);
   resetSearchParams();
   loadData(1);
 };
@@ -1341,8 +1265,8 @@ const handleIntentionChange = async (record: SysCustomerData, newIntention: numb
   }
 };
 
-const handleValidSave = async () => {
-  const isValid = await validFormRef.value?.validate();
+const handleValidSave = async (formInstance?: { validate?: () => Promise<unknown> }) => {
+  const isValid = await formInstance?.validate?.();
   if (isValid) return false;
 
   try {
@@ -1359,17 +1283,29 @@ const handleValidCancel = () => {
 
 // 切换锁定状态
 const handleToggleLock = async (record: SysCustomerData) => {
+  const previousLockStatus = record.isLock;
   try {
-    const newLockStatus = record.isLock === 1 ? 0 : 1;
+    const newLockStatus = previousLockStatus === 1 ? 0 : 1;
     record.isLock = newLockStatus;
-    await updateData(record);
+    await updateData({
+      id: record.id,
+      isLock: newLockStatus
+    });
+    if (selectedCustomerData.value?.id === record.id) {
+      selectedCustomerData.value = {
+        ...selectedCustomerData.value,
+        isLock: newLockStatus
+      };
+    }
     if (newLockStatus === 1) {
       Message.success(`已锁定客户：${record.name}`);
     } else {
       Message.success(`已解锁客户：${record.name}`);
     }
   } catch (error) {
+    record.isLock = previousLockStatus;
     console.error("切换锁定状态失败:", error);
+    Message.error("切换锁定状态失败");
   }
 };
 
