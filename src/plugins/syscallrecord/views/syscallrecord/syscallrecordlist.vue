@@ -71,6 +71,11 @@
                 {{ record.duration != null ? `${record.duration}秒` : "-" }}
               </template>
             </a-table-column>
+            <a-table-column title="创建时间" data-index="createdAt" :width="180" ellipsis tooltip>
+              <template #cell="{ record }">
+                {{ record.createdAt ? formatTime(record.createdAt) : "-" }}
+              </template>
+            </a-table-column>
             <a-table-column title="开始时间" data-index="startTime" :width="180" ellipsis tooltip>
               <template #cell="{ record }">
                 {{ record.startTime ? formatTime(record.startTime) : "-" }}
@@ -82,22 +87,18 @@
               </template>
             </a-table-column>
             <a-table-column title="录音地址" data-index="vdieo" :width="220" ellipsis tooltip />
-            <a-table-column title="创建时间" data-index="createdAt" :width="180" ellipsis tooltip>
-              <template #cell="{ record }">
-                {{ record.createdAt ? formatTime(record.createdAt) : "-" }}
-              </template>
-            </a-table-column>
-            <a-table-column title="操作" :width="200" fixed="right">
-              <template #cell="{ record }">
-                <a-space>
-                  <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.id)">
-                    <a-button size="small" status="danger" v-hasPerm="['plugins:syscallrecordsyscallrecord:delete']">
-                      删除
-                    </a-button>
-                  </a-popconfirm>
-                </a-space>
-              </template>
-            </a-table-column>
+
+<!--            <a-table-column title="操作" :width="200" fixed="right">-->
+<!--              <template #cell="{ record }">-->
+<!--                <a-space>-->
+<!--                  <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.id)">-->
+<!--                    <a-button size="small" status="danger" v-hasPerm="['plugins:syscallrecordsyscallrecord:delete']">-->
+<!--                      删除-->
+<!--                    </a-button>-->
+<!--                  </a-popconfirm>-->
+<!--                </a-space>-->
+<!--              </template>-->
+<!--            </a-table-column>-->
           </template>
         </a-table>
       </a-card>
