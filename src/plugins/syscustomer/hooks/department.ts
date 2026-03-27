@@ -30,7 +30,7 @@ interface DepartmentCascaderOption {
   children?: DepartmentCascaderOption[];
 }
 
-const FOLLOWER_PAGE_SIZE = 100;
+const FOLLOWER_PAGE_SIZE = 1000;
 
 const normalizeDepartmentId = (department: DepartmentLike) => {
   if (typeof department === "number") {
@@ -192,7 +192,7 @@ const buildPermissionInfo = (userInfo: UserInfoLike, departmentTree: DivisionIte
 export const useCustomerDepartmentScope = (userInfo: UserInfoLike) => {
   const departmentTree = ref<DivisionItem[]>([]);
   const departmentTreeLoaded = ref(false);
-  const followerOptions = ref<{ value: number; name: string }[]>([]);
+  const followerOptions = ref<{ value: number; name: string; deptId?: number }[]>([]);
 
   const permissionInfo = computed(() => buildPermissionInfo(userInfo, departmentTree.value));
   const departmentNameMap = computed(() => collectDepartmentNames(departmentTree.value));
@@ -242,7 +242,8 @@ export const useCustomerDepartmentScope = (userInfo: UserInfoLike) => {
       if (response.data && Array.isArray(response.data.list)) {
         followerOptions.value = response.data.list.map((item: AccountItem) => ({
           value: item.id,
-          name: item.nickName
+          name: item.nickName,
+          deptId: item.deptId
         }));
         return;
       }
