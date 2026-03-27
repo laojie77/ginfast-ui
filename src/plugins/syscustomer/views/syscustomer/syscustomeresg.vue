@@ -1,5 +1,5 @@
 <template>
-  <CustomerListPage />
+  <CustomerListPage  scene="reassign" />
 </template>
 
 <script setup lang="ts">

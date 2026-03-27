@@ -13,15 +13,24 @@ type RoleLike = {
 
 type DepartmentLike = number | { id?: number } | null | undefined;
 
-type UserInfoLike = {
-  roles?: RoleLike[];
-  department?: DepartmentLike;
-} | null | undefined;
+type UserInfoLike =
+  | {
+      roles?: RoleLike[];
+      department?: DepartmentLike;
+    }
+  | null
+  | undefined;
 
 export interface DepartmentPermissionInfo {
   hasFullPermission: boolean;
   allowedDeptIds: number[];
   description: string;
+}
+
+export interface DepartmentFollowerOption {
+  value: number;
+  name: string;
+  deptId?: number;
 }
 
 interface DepartmentCascaderOption {
@@ -51,14 +60,40 @@ const resolveLeafDepartmentId = (deptId: SearchDepartmentValue) => {
   return deptId;
 };
 
-const collectDepartmentNames = (nodes: DivisionItem[], nameMap = new Map<number, string>()) => {
+export const createDepartmentNameMap = (nodes: DivisionItem[], nameMap = new Map<number, string>()) => {
   for (const node of nodes) {
     nameMap.set(node.id, node.name);
     if (node.children?.length) {
-      collectDepartmentNames(node.children, nameMap);
+      createDepartmentNameMap(node.children, nameMap);
     }
   }
   return nameMap;
+};
+
+export const getDepartmentNameByMap = (
+  departmentNameMap: ReadonlyMap<number, string>,
+  departmentId?: number | null,
+  fallback = ""
+) => {
+  if (departmentId == null) {
+    return fallback;
+  }
+
+  return departmentNameMap.get(departmentId) || fallback;
+};
+
+export const resolveFollowerDepartmentName = (
+  followerOptions: Array<Pick<DepartmentFollowerOption, "value" | "deptId">>,
+  getDepartmentName: (departmentId?: number | null) => string,
+  userId?: number | string | null,
+  fallback = ""
+) => {
+  if (userId == null) {
+    return fallback;
+  }
+
+  const departmentId = followerOptions.find(item => Number(item.value) === Number(userId))?.deptId;
+  return getDepartmentName(departmentId) || fallback;
 };
 
 const collectChildDepartmentIds = (nodes: DivisionItem[]) => {
@@ -123,7 +158,6 @@ const filterDepartmentTree = (nodes: DivisionItem[], allowedDeptIds: Set<number>
 
   return result;
 };
-
 
 // userInfo.department 为当前自身部门
 //roleIDs:[5, 6]
@@ -192,10 +226,10 @@ const buildPermissionInfo = (userInfo: UserInfoLike, departmentTree: DivisionIte
 export const useCustomerDepartmentScope = (userInfo: UserInfoLike) => {
   const departmentTree = ref<DivisionItem[]>([]);
   const departmentTreeLoaded = ref(false);
-  const followerOptions = ref<{ value: number; name: string; deptId?: number }[]>([]);
+  const followerOptions = ref<DepartmentFollowerOption[]>([]);
 
   const permissionInfo = computed(() => buildPermissionInfo(userInfo, departmentTree.value));
-  const departmentNameMap = computed(() => collectDepartmentNames(departmentTree.value));
+  const departmentNameMap = computed(() => createDepartmentNameMap(departmentTree.value));
 
   const cascaderOptions = computed(() => {
     if (!departmentTree.value.length) {
@@ -271,11 +305,12 @@ export const useCustomerDepartmentScope = (userInfo: UserInfoLike) => {
     await loadFollowerOptionsByDepartmentIds(permissionInfo.value.allowedDeptIds);
   };
 
-  const getDepartmentName = (departmentId?: number) => {
-    if (!departmentId) {
-      return "";
-    }
-    return departmentNameMap.value.get(departmentId) || "";
+  const getDepartmentName = (departmentId?: number | null) => {
+    return getDepartmentNameByMap(departmentNameMap.value, departmentId);
+  };
+
+  const getFollowerDepartmentName = (userId?: number | string | null, fallback = "") => {
+    return resolveFollowerDepartmentName(followerOptions.value, getDepartmentName, userId, fallback);
   };
 
   return {
@@ -287,6 +322,7 @@ export const useCustomerDepartmentScope = (userInfo: UserInfoLike) => {
     loadDepartmentTree,
     loadFollowerOptionsByDepartmentIds,
     loadFollowerOptionsForSearch,
-    getDepartmentName
+    getDepartmentName,
+    getFollowerDepartmentName
   };
 };

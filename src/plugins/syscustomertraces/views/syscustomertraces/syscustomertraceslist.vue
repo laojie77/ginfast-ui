@@ -51,7 +51,7 @@
             </a-table-column>
             <a-table-column title="员工" data-index="userName" :width="140" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getRecordUserName(record) }}
+                {{ record.userName || "-" }}
               </template>
             </a-table-column>
             <a-table-column title="跟进内容" data-index="data" :width="260" ellipsis tooltip />
@@ -169,10 +169,6 @@ const resolveLeafDepartmentId = (deptId: number | number[] | undefined) => {
     return deptId.length > 0 ? deptId[deptId.length - 1] : undefined;
   }
   return deptId;
-};
-
-const getRecordUserName = (record: SysCustomerTracesData) => {
-  return record.userName || followerMap.value.get(Number(record.userId))?.name || String(record.userId || "-");
 };
 
 const getRecordDepartmentName = (record: SysCustomerTracesData) => {

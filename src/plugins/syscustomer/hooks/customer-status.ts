@@ -40,21 +40,12 @@ export const parseCustomerExtra = (extra?: CustomerExtra) => {
   }
 };
 
-export const getCustomerOptionName = (options: CustomerSelectOption[], value?: number | string | null, fallback = "") =>
-  getDictOptionName(options, value, fallback);
-
-export const getCustomerStatusOptionName = (options: CustomerSelectOption[], value?: number | null) =>
-  getCustomerOptionName(options, value, "");
-
-export const getCustomerIntentionOptionName = (options: CustomerSelectOption[], value?: number | null) =>
-  getCustomerOptionName(options, value, "");
-
 export const getCustomerStarOptionName = (options: CustomerSelectOption[], value?: number | null, fallback = "未定级") => {
   if (value == null) {
     return fallback;
   }
 
-  return getCustomerOptionName(options, value, fallback);
+  return getDictOptionName(options, value, fallback);
 };
 
 export const getCustomerStatusColor = (status?: number | null) => {
@@ -95,7 +86,7 @@ export const getCustomerIntentionValidId = (extra?: CustomerExtra) => {
 };
 
 export const getCustomerStatusDisplayText = (record: CustomerStatusLike, statusOptions: CustomerSelectOption[]) => {
-  const statusName = getCustomerStatusOptionName(statusOptions, record.status);
+  const statusName = getDictOptionName(statusOptions, record.status, "");
   const progressRemark = getCustomerProgressRemark(record.extra);
   return progressRemark ? `${statusName} - ${progressRemark}` : statusName;
 };
@@ -105,7 +96,7 @@ export const getCustomerIntentionDisplayText = (
   intentionOptions: CustomerSelectOption[],
   validOptionsMap: Map<number, CustomerValidData>
 ) => {
-  const intentionName = getCustomerIntentionOptionName(intentionOptions, record.intention);
+  const intentionName = getDictOptionName(intentionOptions, record.intention, "");
   if (Number(record.intention) === 0) {
     return intentionName;
   }

@@ -42,8 +42,8 @@
               <a-form-item field="userId" label="跟进人">
                 <a-select v-model="searchForm.userId" placeholder="请选择跟进人" allow-clear>
                   <a-option v-for="item in followerOptions" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -52,8 +52,8 @@
               <a-form-item field="customerStar" label="星级">
                 <a-select v-model="searchForm.customerStar" placeholder="星级" allow-clear>
                   <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -70,8 +70,8 @@
               <a-form-item field="intention" label="客户有效">
                 <a-select v-model="searchForm.intention" placeholder="客户有效" allow-clear>
                   <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -80,8 +80,8 @@
               <a-form-item field="singlePieceType" label="贷款类型">
                 <a-select v-model="searchForm.singlePieceType" placeholder="贷款类型" allow-clear>
                   <a-option v-for="item in singlePieceTypeOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -108,8 +108,8 @@
               <a-form-item field="isReassign" label="再分配">
                 <a-select v-model="searchForm.isReassign" placeholder="再分配" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -118,8 +118,8 @@
               <a-form-item field="isQuit" label="离职数据">
                 <a-select v-model="searchForm.isQuit" placeholder="离职数据" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -128,8 +128,8 @@
               <a-form-item field="isRepeat" label="重复标记">
                 <a-select v-model="searchForm.isRepeat" placeholder="重复标记" allow-clear>
                   <a-option v-for="item in isStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -138,8 +138,8 @@
               <a-form-item field="starStatus" label="星级回传">
                 <a-select v-model="searchForm.starStatus" placeholder="星级回传" allow-clear>
                   <a-option v-for="item in starStatusOption" :key="item.value" :value="Number(item.value)">{{
-                      item.name
-                    }}</a-option>
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -292,41 +292,41 @@
             <a-table-column title="所在城市" data-index="city" :width="100" ellipsis tooltip />
             <a-table-column title="客户来源" data-index="from" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getOptionName(fromOption, record.from) }}
+                {{ getDictOptionName(fromOption, record.from) }}
               </template>
             </a-table-column>
             <a-table-column title="再分配" data-index="isReassign" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isReassign === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isReassign) }}
+                  {{ getDictOptionName(isStatusOption, record.isReassign) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="离职数据" data-index="isQuit" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isQuit === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isQuit) }}
+                  {{ getDictOptionName(isStatusOption, record.isQuit) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="重复标记" data-index="isRepeat" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isRepeat === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isRepeat) }}
+                  {{ getDictOptionName(isStatusOption, record.isRepeat) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="短信" data-index="isSms" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isSms === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isSmsOption, record.isSms) }}
+                  {{ getDictOptionName(isSmsOption, record.isSms) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="星级回传" data-index="starStatus" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.starStatus === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(starStatusOption, record.starStatus) }}
+                  {{ getDictOptionName(starStatusOption, record.starStatus) }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -390,8 +390,10 @@
                     :color="editingData.customerStar != null ? getCustomerStarTagColor(Number(editingData.customerStar)) : ''"
                   >
                     {{
-                      getCustomerStarOptionName(editingData.customerStar != null ? Number(editingData.customerStar) : null) ||
-                      "未定级"
+                      resolveCustomerStarOptionName(
+                        customerStarOption,
+                        editingData.customerStar != null ? Number(editingData.customerStar) : null
+                      ) || "未定级"
                     }}
                   </a-tag>
                   <a-tag
@@ -406,7 +408,7 @@
                             : ''
                     "
                   >
-                    {{ getOptionName(intentionOption, editingData.intention) || "客户有效待确认" }}
+                    {{ getDictOptionName(intentionOption, editingData.intention) || "客户有效待确认" }}
                   </a-tag>
                 </div>
               </div>
@@ -433,8 +435,8 @@
                   <a-form-item field="channelId" label="渠道来源">
                     <a-select v-model="editingData.channelId" placeholder="请选择渠道来源" allow-clear size="large">
                       <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -472,8 +474,8 @@
                   <a-form-item field="customerStar" label="客户星级" class="editor-compact-item">
                     <a-select v-model="editingData.customerStar" placeholder="请选择客户星级" allow-clear>
                       <a-option v-for="item in customerStarOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -481,8 +483,8 @@
                   <a-form-item field="status" label="业务阶段" class="editor-compact-item">
                     <a-select v-model="editingData.status" placeholder="请选择业务阶段" allow-clear>
                       <a-option v-for="item in statusOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -490,8 +492,8 @@
                   <a-form-item field="intention" label="客户有效" class="editor-compact-item">
                     <a-select v-model="editingData.intention" placeholder="请选择客户有效状态" allow-clear>
                       <a-option v-for="item in intentionOption" :key="item.value" :value="Number(item.value)">{{
-                          item.name
-                        }}</a-option>
+                        item.name
+                      }}</a-option>
                     </a-select>
                   </a-form-item>
                 </div>
@@ -589,7 +591,7 @@
             @click="handleManageValid"
             style="color: #165dff"
             v-hasPerm="['plugins:syscustomersyscustomer:addValids']"
-          >管理</a-button
+            >管理</a-button
           >
         </div>
         <a-form :model="validUpdateForm" ref="validFormRef">
@@ -706,7 +708,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../../hooks/syscustomer";
 import type { SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../../api/syscustomer";
-import { formatTime } from "@/globals";
+import { formatTime, getDictOptionName } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { verifyPhone } from "@/utils/verify-tools";
 import { getSysChannelCompanyList } from "../../../syschannelcompany/api/syschannelcompany";
@@ -720,14 +722,11 @@ import { useCustomerDepartmentScope } from "../../hooks/department.ts";
 import {
   getCustomerIntentionColor as resolveCustomerIntentionColor,
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
-  getCustomerIntentionOptionName as resolveCustomerIntentionOptionName,
-  getCustomerOptionName as resolveCustomerOptionName,
   getCustomerStarDisplayText as resolveCustomerStarDisplayText,
   getCustomerStarOptionName as resolveCustomerStarOptionName,
   getCustomerStarTagColor as resolveCustomerStarTagColor,
   getCustomerStatusColor as resolveCustomerStatusColor,
   getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
-  getCustomerStatusOptionName as resolveCustomerStatusOptionName,
   useCustomerValidOptions
 } from "../../hooks/customer-status.ts";
 import { useCustomerTraceActions } from "../../hooks/customer-trace-actions.ts";
@@ -837,10 +836,10 @@ const {
   closeStatusModal,
   closeValidModal
 } = useCustomerTraceActions<SysCustomerData>({
-  getStatusName: value => getStatusOptionName(value),
-  getIntentionName: value => getIntentionOptionName(value),
-  getCustomerStarName: value => getCustomerStarOptionName(value),
-  getCustomerValidName: validId => getCustomerValidName(validId),
+  getStatusName: value => getDictOptionName(statusOption.value, value, ""),
+  getIntentionName: value => getDictOptionName(intentionOption.value, value, ""),
+  getCustomerStarName: value => resolveCustomerStarOptionName(customerStarOption.value, value),
+  getCustomerValidName: resolveCustomerValidName,
   prepareValidOptions: type => loadCustomerValidOptions(type),
   persistTracePayload: async (payload, context) => {
     await updateCustomerStatusTrace(payload);
@@ -1305,24 +1304,8 @@ const getCustomerStarDisplayText = (record: SysCustomerData) => {
   return resolveCustomerStarDisplayText(record, customerStarOption.value);
 };
 
-const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number | string | null) => {
-  return resolveCustomerOptionName(options, value, "");
-};
-
-const getStatusOptionName = (value?: number | null) => resolveCustomerStatusOptionName(statusOption.value, value);
-
-const getIntentionOptionName = (value?: number | null) => resolveCustomerIntentionOptionName(intentionOption.value, value);
-
-const getCustomerStarOptionName = (value?: number | null) => {
-  return resolveCustomerStarOptionName(customerStarOption.value, value);
-};
-
 const getCustomerStarTagColor = (value?: number | null) => {
   return resolveCustomerStarTagColor(value);
-};
-
-const getCustomerValidName = (validId?: number) => {
-  return resolveCustomerValidName(validId);
 };
 
 const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar: number) => {

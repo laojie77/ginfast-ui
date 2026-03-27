@@ -46,7 +46,7 @@
             <a-table-column title="ID" data-index="id" :width="90" ellipsis tooltip />
             <a-table-column title="所属部门" :width="160" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getRecordDepartmentName(record) || "-" }}
+                {{ getFollowerDepartmentName(record.userId) || "-" }}
               </template>
             </a-table-column>
             <a-table-column title="员工" data-index="userName" :width="140" ellipsis tooltip>
@@ -58,12 +58,12 @@
             <a-table-column title="电话" data-index="mobile" :width="140" ellipsis tooltip />
             <a-table-column title="通话状态" data-index="status" :width="140" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getOptionName(statusOption, record.status) || "-" }}
+                {{ getDictOptionName(statusOption, record.status) || "-" }}
               </template>
             </a-table-column>
             <a-table-column title="通话类型" data-index="type" :width="140" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getOptionName(typeOption, record.type) || "-" }}
+                {{ getDictOptionName(typeOption, record.type) || "-" }}
               </template>
             </a-table-column>
             <a-table-column title="通话时长" data-index="duration" :width="120" ellipsis tooltip>
@@ -108,7 +108,7 @@
 <script setup lang="ts">
 import { Message } from "@arco-design/web-vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { formatTime } from "@/globals";
+import { formatTime, getDictOptionName } from "@/globals";
 import { UserInfoKey } from "@/utils/auth";
 import { getLocalStorage } from "@/utils/app";
 import { useCustomerDepartmentScope } from "@/plugins/syscustomer/hooks/department";
@@ -128,7 +128,7 @@ const {
   departmentTreeLoaded,
   loadDepartmentTree,
   loadFollowerOptionsForSearch,
-  getDepartmentName
+  getFollowerDepartmentName
 } = useCustomerDepartmentScope(userInfo);
 
 const { dataList, loading, total, currentPage, pageSize, fetchDataList, createData, updateData, deleteData, resetSearchParams } =
@@ -172,33 +172,11 @@ const paginationConfig = computed(() => ({
   pageSizeOptions: [10, 20, 30, 50]
 }));
 
-const followerMap = computed(
-  () =>
-    new Map(
-      followerOptions.value.map(item => [
-        Number(item.value),
-        { name: item.name, deptId: item.deptId }
-      ])
-    )
-);
-
 const resolveLeafDepartmentId = (deptId: number | number[] | undefined) => {
   if (Array.isArray(deptId)) {
     return deptId.length > 0 ? deptId[deptId.length - 1] : undefined;
   }
   return deptId;
-};
-
-const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number | string | null) => {
-  if (value === undefined || value === null || value === "") {
-    return "";
-  }
-  return options.find(item => Number(item.value) === Number(value))?.name || "";
-};
-
-const getRecordDepartmentName = (record: SysCallRecordData) => {
-  const deptId = followerMap.value.get(Number(record.userId))?.deptId;
-  return deptId ? getDepartmentName(deptId) : "";
 };
 
 const validateSearchForm = () => {

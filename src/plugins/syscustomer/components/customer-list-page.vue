@@ -292,41 +292,41 @@
             <a-table-column title="所在城市" data-index="city" :width="100" ellipsis tooltip />
             <a-table-column title="客户来源" data-index="from" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ getOptionName(fromOption, record.from) }}
+                {{ getDictOptionName(fromOption, record.from) }}
               </template>
             </a-table-column>
             <a-table-column title="再分配" data-index="isReassign" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isReassign === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isReassign) }}
+                  {{ getDictOptionName(isStatusOption, record.isReassign) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="离职数据" data-index="isQuit" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isQuit === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isQuit) }}
+                  {{ getDictOptionName(isStatusOption, record.isQuit) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="重复标记" data-index="isRepeat" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isRepeat === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isStatusOption, record.isRepeat) }}
+                  {{ getDictOptionName(isStatusOption, record.isRepeat) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="短信" data-index="isSms" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.isSms === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(isSmsOption, record.isSms) }}
+                  {{ getDictOptionName(isSmsOption, record.isSms) }}
                 </a-tag>
               </template>
             </a-table-column>
             <a-table-column title="星级回传" data-index="starStatus" :width="100" ellipsis tooltip>
               <template #cell="{ record }">
                 <a-tag size="small" :color="record.starStatus === 1 ? 'arcoblue' : 'red'">
-                  {{ getOptionName(starStatusOption, record.starStatus) }}
+                  {{ getDictOptionName(starStatusOption, record.starStatus) }}
                 </a-tag>
               </template>
             </a-table-column>
@@ -383,8 +383,10 @@
                     :color="editingData.customerStar != null ? getCustomerStarTagColor(Number(editingData.customerStar)) : ''"
                   >
                     {{
-                      getCustomerStarOptionName(editingData.customerStar != null ? Number(editingData.customerStar) : null) ||
-                      "未定级"
+                      resolveCustomerStarOptionName(
+                        customerStarOption,
+                        editingData.customerStar != null ? Number(editingData.customerStar) : null
+                      ) || "未定级"
                     }}
                   </a-tag>
                   <a-tag
@@ -399,7 +401,7 @@
                             : ''
                     "
                   >
-                    {{ getOptionName(intentionOption, editingData.intention) || "客户有效待确认" }}
+                    {{ getDictOptionName(intentionOption, editingData.intention) || "客户有效待确认" }}
                   </a-tag>
                 </div>
               </div>
@@ -604,7 +606,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../hooks/syscustomer.ts";
 import type { CustomerListScene, SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../api/syscustomer.ts";
-import { formatTime } from "@/globals";
+import { formatTime, getDictOptionName } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { verifyPhone } from "@/utils/verify-tools.ts";
 import { getSysChannelCompanyList } from "../../syschannelcompany/api/syschannelcompany.ts";
@@ -624,14 +626,11 @@ import { useCustomerDepartmentScope } from "../hooks/department.ts";
 import {
   getCustomerIntentionColor as resolveCustomerIntentionColor,
   getCustomerIntentionDisplayText as resolveCustomerIntentionDisplayText,
-  getCustomerIntentionOptionName as resolveCustomerIntentionOptionName,
-  getCustomerOptionName as resolveCustomerOptionName,
   getCustomerStarDisplayText as resolveCustomerStarDisplayText,
   getCustomerStarOptionName as resolveCustomerStarOptionName,
   getCustomerStarTagColor as resolveCustomerStarTagColor,
   getCustomerStatusColor as resolveCustomerStatusColor,
   getCustomerStatusDisplayText as resolveCustomerStatusDisplayText,
-  getCustomerStatusOptionName as resolveCustomerStatusOptionName,
   useCustomerValidOptions
 } from "../hooks/customer-status.ts";
 import { useCustomerTraceActions } from "../hooks/customer-trace-actions.ts";
@@ -760,10 +759,10 @@ const {
   closeStatusModal,
   closeValidModal
 } = useCustomerTraceActions<SysCustomerData>({
-  getStatusName: value => getStatusOptionName(value),
-  getIntentionName: value => getIntentionOptionName(value),
-  getCustomerStarName: value => getCustomerStarOptionName(value),
-  getCustomerValidName: validId => getCustomerValidName(validId),
+  getStatusName: value => getDictOptionName(statusOption.value, value, ""),
+  getIntentionName: value => getDictOptionName(intentionOption.value, value, ""),
+  getCustomerStarName: value => resolveCustomerStarOptionName(customerStarOption.value, value),
+  getCustomerValidName: resolveCustomerValidName,
   prepareValidOptions: type => loadCustomerValidOptions(type),
   persistTracePayload: async (payload, context) => {
     await updateCustomerStatusTrace(payload);
@@ -1229,24 +1228,8 @@ const getCustomerStarDisplayText = (record: SysCustomerData) => {
   return resolveCustomerStarDisplayText(record, customerStarOption.value);
 };
 
-const getOptionName = (options: Array<{ value: number | string; name: string }>, value?: number | string | null) => {
-  return resolveCustomerOptionName(options, value, "");
-};
-
-const getStatusOptionName = (value?: number | null) => resolveCustomerStatusOptionName(statusOption.value, value);
-
-const getIntentionOptionName = (value?: number | null) => resolveCustomerIntentionOptionName(intentionOption.value, value);
-
-const getCustomerStarOptionName = (value?: number | null) => {
-  return resolveCustomerStarOptionName(customerStarOption.value, value);
-};
-
 const getCustomerStarTagColor = (value?: number | null) => {
   return resolveCustomerStarTagColor(value);
-};
-
-const getCustomerValidName = (validId?: number) => {
-  return resolveCustomerValidName(validId);
 };
 
 const handleCustomerStarChange = async (record: SysCustomerData, newCustomerStar: number) => {

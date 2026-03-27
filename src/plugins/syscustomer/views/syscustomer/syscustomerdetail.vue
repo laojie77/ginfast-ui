@@ -357,6 +357,7 @@ import {
   parseCustomerExtra,
   useCustomerValidOptions
 } from "../../hooks/customer-status.ts";
+import { createDepartmentNameMap, getDepartmentNameByMap } from "../../hooks/department.ts";
 import { useCustomerTraceActions } from "../../hooks/customer-trace-actions.ts";
 import { useCustomerValidManager } from "../../hooks/customer-valid-manager.ts";
 
@@ -435,6 +436,7 @@ const visible = computed({
 });
 
 const CUSTOMER_EXTRA_OPTIONS = computed(() => sysConfigStore.customerExtraConfig || {});
+const departmentNameMap = computed(() => createDepartmentNameMap(props.departmentTree || []));
 
 const localCustomer = ref<CustomerDetailData>();
 const savingField = ref("");
@@ -564,22 +566,7 @@ const getFollowerDisplayName = () => {
 };
 
 const getDepartmentName = (deptId?: number) => {
-  if (!deptId || !props.departmentTree.length) return "-";
-
-  const findDepartmentName = (nodes: any[]): string => {
-    for (const node of nodes) {
-      if (node.id === deptId) {
-        return node.name;
-      }
-      if (node.children?.length) {
-        const result = findDepartmentName(node.children);
-        if (result) return result;
-      }
-    }
-    return "";
-  };
-
-  return findDepartmentName(props.departmentTree) || "-";
+  return getDepartmentNameByMap(departmentNameMap.value, deptId, "-");
 };
 
 const getStatusColor = (status?: number) => {
