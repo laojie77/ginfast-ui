@@ -128,19 +128,28 @@ onBeforeUnmount(() => {
 
 <style lang="scss">
 .editor—wrapper {
-    border: 1px solid #cccccc;
-    z-index: 100; /* 按需定义 */
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+
     .toolbar-container {
-        border-bottom: 1px solid #cccccc;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 8px 12px;
     }
+
     .editor-container {
         overflow-y: hidden;
+        background-color: #ffffff;
     }
-  
 }
 
 .w-e-text-container .w-e-scroll {
-    height: 500px !important;   /*编辑器高度*/
-    -webkit-overflow-scrolling: touch;    /* 开启平滑滚动*/
+    height: 400px !important;
+    -webkit-overflow-scrolling: touch;
 }
 </style>
