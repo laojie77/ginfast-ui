@@ -20,12 +20,6 @@
           <a-input v-model="searchForm.data" placeholder="请输入跟进内容" allow-clear style="width: 240px" />
           <a-button type="primary" @click="handleSearch">查询</a-button>
           <a-button @click="handleReset">重置</a-button>
-          <a-button type="primary" @click="handleCreate" v-hasPerm="['plugins:syscustomertracessyscustomertraces:add']">
-            <template #icon>
-              <icon-plus />
-            </template>
-            <span>新增数据</span>
-          </a-button>
         </a-space>
 
         <a-table
@@ -63,9 +57,6 @@
             <a-table-column title="操作" :width="200" fixed="right">
               <template #cell="{ record }">
                 <a-space>
-                  <a-button size="small" @click="handleEdit(record)" v-hasPerm="['plugins:syscustomertracessyscustomertraces:edit']">
-                    编辑
-                  </a-button>
                   <a-popconfirm content="确定要删除这条数据吗？" @ok="handleDelete(record.id)">
                     <a-button size="small" status="danger" v-hasPerm="['plugins:syscustomertracessyscustomertraces:delete']">
                       删除

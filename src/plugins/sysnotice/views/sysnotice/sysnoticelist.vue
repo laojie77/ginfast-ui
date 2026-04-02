@@ -112,7 +112,7 @@
             </a-table-column>
             <a-table-column title="发布人" data-index="publisher" :width="80">
               <template #cell="{ record }">
-                {{ record.publisher?.username || '-' }}
+                {{ getPublisherName(record.publisher) }}
               </template>
             </a-table-column>
             <a-table-column
@@ -131,7 +131,7 @@
                 <a-space>
                   <a-button size="small" @click="handleView(record)">查看</a-button>
                   <a-button
-                    v-if="record.publishStatus === 0 || record.publishStatus === -1"
+                    v-if="record.publishStatus != 1"
                     size="small"
                     type="primary"
                     @click="handlePublish(record.id)"
@@ -147,7 +147,7 @@
                   >撤回</a-button
                   >
                   <a-button
-                    v-if="record.publishStatus === 0"
+                    v-if="record.publishStatus != 1"
                     size="small"
                     @click="handleEdit(record)"
                     v-hasPerm="['plugins:sysnoticesysnotice:edit']"
@@ -171,7 +171,7 @@
         </a-table>
       </a-card>
 
-      <!-- 编辑/创建弹窗 - CRM风格优化 -->
+      <!-- 编辑/创建弹窗 -->
       <a-modal
         v-model:visible="modalVisible"
         :title="modalTitle"
@@ -395,109 +395,70 @@
         </div>
       </a-modal>
 
-      <!-- 查看详情弹窗 - CRM风格优化 -->
+      <!-- 查看详情弹窗  -->
       <a-modal
         v-model:visible="viewVisible"
         title="通知详情"
         :footer="false"
-        :width="isMobile ? '95vw' : '800px'"
-        :body-style="{ padding: 0 }"
+        :closable="false"
+        :width="isMobile ? '95vw' : '780px'"
+        :body-style="{ padding: 0, overflow: 'hidden' }"
         :unmount-on-close="true"
         class="crm-modal notice-detail-modal"
       >
-        <div class="detail-container">
-          <div class="detail-hero">
-            <div class="detail-hero__main">
-              <div class="modal-banner__eyebrow">NOTICE PROFILE</div>
-              <div class="detail-hero__title">{{ viewData.title || '通知详情' }}</div>
-              <div class="detail-hero__meta">
-                <a-tag :color="getPublishStatusColor(viewData.publishStatus)">
-                  {{ getPublishStatusLabel(viewData.publishStatus) }}
-                </a-tag>
-                <a-tag color="arcoblue">{{ getDictLabel(typeOption, viewData.type) || '-' }}</a-tag>
-                <a-tag :color="getLevelColor(viewData.level)">{{ getDictLabel(levelOption, viewData.level) || '-' }}</a-tag>
-              </div>
+        <div class="notice-detail">
+          <div class="notice-detail__hero">
+            <button class="notice-detail__close" type="button" @click="viewVisible = false">
+              <icon-close />
+            </button>
+
+            <div class="notice-detail__badge">
+              <span class="notice-detail__badge-icon">
+                <icon-notification />
+              </span>
+              <span class="notice-detail__badge-text">{{ detailTypeLabel }}</span>
             </div>
-            <div class="detail-stats">
-              <div class="detail-stat">
-                <span>接收人数</span>
-                <strong>{{ viewData.recipientCount || 0 }}</strong>
-              </div>
-              <div class="detail-stat">
-                <span>未读数</span>
-                <strong>{{ viewData.unreadCount || 0 }}</strong>
-              </div>
-              <div class="detail-stat" v-if="viewData.publishTime">
-                <span>发布时间</span>
-                <strong>{{ viewData.publishTime ? formatTime(viewData.publishTime) : "-" }}</strong>
-              </div>
-              <div class="detail-stat" v-else>
-                <span>创建时间</span>
-                <strong>{{ viewData.createdAt ? formatTime(viewData.createdAt) : "-"}}</strong>
+
+            <h3 class="notice-detail__title">{{ viewData.title || "通知详情" }}</h3>
+
+            <div class="notice-detail__meta">
+              <span class="notice-detail__meta-item">
+                <icon-clock-circle />
+                <span>{{ detailPublishMeta }}</span>
+              </span>
+              <span class="notice-detail__meta-item">
+                <icon-eye />
+                <span>{{ detailStatusMeta }}</span>
+              </span>
+            </div>
+
+            <div class="notice-detail__tags">
+              <span class="notice-detail__tag">发布人 {{ getPublisherName(viewData.publisher) }}</span>
+              <span class="notice-detail__tag notice-detail__tag--level" :style="detailLevelTagStyle">等级 {{ detailLevelLabel }}</span>
+              <span class="notice-detail__tag">接收人数 {{ viewData.recipientCount || 0 }}</span>
+              <span class="notice-detail__tag">未读数 {{ viewData.unreadCount || 0 }}</span>
+            </div>
+          </div>
+          <div class="notice-detail__body notice-detail__body--stacked">
+            <div class="notice-detail__content-card">
+              <span class="notice-detail__content-accent" />
+              <div :class="['notice-detail__content', { 'notice-detail__content--scrollable': detailHtmlVisible }]">
+                <div v-if="detailHtmlVisible" class="notice-detail__html notice-detail__html--scrollable" v-html="detailContentHtml" />
+                <ul v-else-if="detailTextLines.length" class="notice-detail__list">
+                  <li v-for="(line, index) in detailTextLines" :key="`${viewData.id || 'detail'}-${index}`">
+                    {{ line }}
+                  </li>
+                </ul>
+                <div v-else class="notice-detail__empty">暂无通知内容</div>
               </div>
             </div>
           </div>
-
-          <div class="detail-panels">
-            <div class="detail-panel">
-              <div class="section-header">
-                <div class="section-header__icon">
-                  <icon-file />
-                </div>
-                <div class="section-header__body">
-                  <span class="section-header__title">通知信息</span>
-                </div>
-              </div>
-              <a-descriptions :column="isMobile ? 1 : 2" bordered>
-                <a-descriptions-item label="通知标题">{{ viewData.title || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="通知类型">{{ getDictLabel(typeOption, viewData.type) || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="通知等级">
-                  <a-tag :color="getLevelColor(viewData.level)">{{ getDictLabel(levelOption, viewData.level) || '-' }}</a-tag>
-                </a-descriptions-item>
-                <a-descriptions-item label="发布状态">
-                  <a-tag :color="getPublishStatusColor(viewData.publishStatus)">
-                    {{ getPublishStatusLabel(viewData.publishStatus) }}
-                  </a-tag>
-                </a-descriptions-item>
-                <a-descriptions-item label="发布人">{{ viewData.publisher?.username || '-' }}</a-descriptions-item>
-                <a-descriptions-item label="发布时间">{{ viewData.publishTime ? formatTime(viewData.publishTime) : '-' }}</a-descriptions-item>
-                <a-descriptions-item label="接收人数">{{ viewData.recipientCount || 0 }}</a-descriptions-item>
-                <a-descriptions-item label="未读数">{{ viewData.unreadCount || 0 }}</a-descriptions-item>
-              </a-descriptions>
+          <div class="notice-detail__footer">
+            <div class="notice-detail__footer-tip">
+              <icon-file />
+              <span></span>
             </div>
-
-            <div class="detail-panel">
-              <div class="section-header">
-                <div class="section-header__icon">
-                  <icon-user-group />
-                </div>
-                <div class="section-header__body">
-                  <span class="section-header__title">通知对象</span>
-                </div>
-              </div>
-              <div class="target-summary">
-                <a-space wrap>
-                  <template v-if="viewData.targets && viewData.targets.length">
-                    <a-tag v-for="(target, idx) in formatTargetsSummary(viewData.targets)" :key="idx" color="arcoblue">
-                      {{ target }}
-                    </a-tag>
-                  </template>
-                  <span v-else>-</span>
-                </a-space>
-              </div>
-            </div>
-
-            <div class="detail-panel">
-              <div class="section-header">
-                <div class="section-header__icon">
-                  <icon-edit />
-                </div>
-                <div class="section-header__body">
-                  <span class="section-header__title">通知内容</span>
-                </div>
-              </div>
-              <div class="content-preview" v-html="viewData.content"></div>
-            </div>
+            <a-button class="notice-detail__footer-btn" @click="viewVisible = false">关闭</a-button>
           </div>
         </div>
       </a-modal>
@@ -514,6 +475,7 @@ import { Message } from '@arco-design/web-vue'
 import { getRolesAPI, type RoleItem } from '@/api/role'
 import { getDivisionAPI, type DivisionItem } from '@/api/department'
 import { getAccountListAPI, type AccountItem } from '@/api/user'
+import { extractNoticePlainText, formatRelativeTime, getNoticeLevelTheme } from '@/utils/notice-tools'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 
@@ -600,6 +562,49 @@ const editingData = reactive({
 })
 
 const viewData = ref<Partial<SysNoticeData & { targets?: any[] }>>({})
+const detailTypeLabel = computed(() => String(getDictLabel(typeOption.value, viewData.value.type) || '通知'))
+const detailLevelLabel = computed(() => String(getDictLabel(levelOption.value, viewData.value.level) || '普通'))
+const detailStatusLabel = computed(() => getPublishStatusLabel(viewData.value.publishStatus))
+const detailContentHtml = computed(() => viewData.value.content?.trim() || '')
+const detailContentText = computed(() => extractNoticePlainText(detailContentHtml.value))
+const detailHtmlVisible = computed(() => /<\/?[a-z][\s\S]*>/i.test(detailContentHtml.value) && Boolean(detailContentText.value))
+const detailTextLines = computed(() =>
+  detailHtmlVisible.value
+    ? []
+    : detailContentText.value
+        .split(/\r?\n+/)
+        .map(line => line.replace(/^[\s\-*\u2022]+/, '').trim())
+        .filter(Boolean)
+)
+const detailPublishMeta = computed(() => {
+  const publishTime = viewData.value.publishTime || viewData.value.createdAt
+  if (!publishTime) {
+    return '发布时间未记录'
+  }
+
+  const relative = formatRelativeTime(publishTime)
+  const absolute = formatTime(publishTime)
+  return relative ? `${relative} / ${absolute}` : absolute
+})
+const detailStatusMeta = computed(() => {
+  const statusLabel = detailStatusLabel.value
+  const publishTime = viewData.value.publishTime || viewData.value.createdAt
+  if (!publishTime) {
+    return statusLabel
+  }
+
+  const absolute = formatTime(publishTime)
+  return statusLabel ? `${statusLabel} / ${absolute}` : absolute
+})
+const detailLevelTagStyle = computed(() => {
+  const theme = getNoticeLevelTheme(viewData.value.level)
+  return {
+    '--notice-level-text': theme.textColor,
+    '--notice-level-bg': theme.backgroundColor,
+    '--notice-level-border': theme.borderColor,
+    '--notice-level-accent': theme.accentColor
+  }
+})
 const createDefaultEditingData = () => ({
   id: undefined as number | undefined,
   title: '',
@@ -743,6 +748,10 @@ const getLevelColor = (level?: string) => {
   const colors: any = { L: 'blue', M: 'orange', H: 'red' }
   if (!level) return 'gray'
   return colors[level] || 'gray'
+}
+
+const getPublisherName = (publisher?: { nickName?: string; userName?: string; username?: string }) => {
+  return publisher?.nickName || publisher?.userName || publisher?.username || '-'
 }
 
 // 用户搜索过滤
@@ -927,7 +936,7 @@ const handlePublish = async (id: number) => {
     Message.success('发布成功')
     await loadData()
   } catch {
-    Message.error('发布失败')
+    // Message.error('发布失败')
   }
 }
 
@@ -937,7 +946,7 @@ const handleRevoke = async (id: number) => {
     Message.success('撤回成功')
     await loadData()
   } catch {
-    Message.error('撤回失败')
+    // Message.error('撤回失败')
   }
 }
 
@@ -947,7 +956,7 @@ const handleDelete = async (id: number) => {
     Message.success('删除成功')
     await loadData()
   } catch {
-    Message.error('删除失败')
+    // Message.error('删除失败')
   }
 }
 
@@ -1080,6 +1089,23 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.notice-detail-modal :deep(.arco-modal) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+  margin: 24px auto;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.notice-detail-modal :deep(.arco-modal-content) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
 .crm-modal :deep(.arco-modal-header) {
   border-bottom: 1px solid #e5e6eb;
   padding: 20px 24px;
@@ -1096,6 +1122,10 @@ onBeforeUnmount(() => {
   border-top: 1px solid #e5e6eb;
   padding: 16px 24px;
   background: #fff;
+}
+
+.notice-detail-modal :deep(.arco-modal-header) {
+  display: none;
 }
 
 .modal-form-container {
@@ -1125,8 +1155,7 @@ onBeforeUnmount(() => {
   color: #4080ff;
 }
 
-.modal-banner__title,
-.detail-hero__title {
+.modal-banner__title {
   font-size: 24px;
   font-weight: 700;
   line-height: 1.3;
@@ -1346,14 +1375,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 10px 24px rgba(22, 93, 255, 0.12);
 }
 
-.form-tip {
-  display: block;
-  font-size: 12px;
-  line-height: 1.6;
-  color: #86909c;
-  margin-top: 8px;
-}
-
 .target-field-stack {
   display: flex;
   flex-direction: column;
@@ -1384,95 +1405,270 @@ onBeforeUnmount(() => {
 
 
 /* 详情弹窗样式 */
-.detail-container {
-  background: linear-gradient(180deg, #f6f8fc 0%, #eef2f8 100%);
-}
-
-.detail-hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 24px;
-  border-bottom: 1px solid rgba(229, 230, 235, 0.8);
-  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 58%, #eef4ff 100%);
-}
-
-.detail-hero__main {
+.notice-detail {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+  background:
+    radial-gradient(circle at top right, rgba(64, 128, 255, 0.14), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.notice-detail__hero {
+  position: relative;
+  padding: 24px 30px 22px;
+  border-bottom: 1px solid #edf1f7;
+  background: linear-gradient(120deg, rgba(240, 245, 255, 0.88) 0%, rgba(255, 255, 255, 0.98) 45%, rgba(235, 242, 255, 0.92) 100%);
+}
+
+.notice-detail__close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #6b778c;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(31, 56, 112, 0.08);
+  transition: all 0.2s ease;
+}
+
+.notice-detail__close:hover {
+  color: #1d2129;
+  transform: translateY(-1px);
+}
+
+.notice-detail__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.notice-detail__badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2f65f5 0%, #6788ff 100%);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(47, 101, 245, 0.28);
+}
+
+.notice-detail__badge-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(64, 128, 255, 0.12);
+  font-size: 13px;
+  font-weight: 600;
+  color: #2457d6;
+}
+
+.notice-detail__title {
+  max-width: calc(100% - 64px);
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1d2129;
+  word-break: break-word;
+}
+
+.notice-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.notice-detail__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #4e5969;
+}
+
+.notice-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
-.detail-hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.detail-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(110px, 1fr));
-  gap: 12px;
-  min-width: 340px;
-}
-
-.detail-stat {
-  padding: 14px 16px;
-  border: 1px solid #dce7fb;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 22px rgba(22, 93, 255, 0.08);
-}
-
-.detail-stat span {
-  display: block;
-  margin-bottom: 8px;
+.notice-detail__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid #e5eaf5;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
   font-size: 12px;
+  color: #4e5969;
+  transition: all 0.2s ease;
+}
+
+.notice-detail__tag--level {
+  border-color: var(--notice-level-border, #d9dee8);
+  background: var(--notice-level-bg, rgba(255, 255, 255, 0.88));
+  color: var(--notice-level-text, #4e5969);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.notice-detail__tag--level::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--notice-level-accent, #86909c);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--notice-level-accent, #86909c) 16%, white);
+}
+
+.notice-detail__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 30px;
+}
+
+.notice-detail__body--stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.notice-detail__content-card {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  padding: 28px 26px;
+  border: 1px solid #edf1f7;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdff 100%);
+  box-shadow: 0 18px 40px rgba(28, 47, 96, 0.06);
+}
+
+.notice-detail__content-accent {
+  width: 4px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #2f65f5 0%, #9d4dff 100%);
+}
+
+.notice-detail__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-detail__content--scrollable {
+  min-height: 0;
+}
+
+.notice-detail__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 16px;
+  line-height: 1.9;
+  color: #1d2129;
+}
+
+.notice-detail__list li::marker {
+  color: #2f65f5;
+}
+
+.notice-detail__list li + li {
+  margin-top: 10px;
+}
+
+.notice-detail__html {
+  font-size: 15px;
+  line-height: 1.9;
+  color: #1d2129;
+  word-break: break-word;
+}
+
+.notice-detail__html--scrollable {
+  max-height: clamp(220px, 50vh, 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 8px;
+}
+
+.notice-detail__html :deep(p) {
+  margin: 0;
+}
+
+.notice-detail__html :deep(p + p),
+.notice-detail__html :deep(p + ul),
+.notice-detail__html :deep(p + ol),
+.notice-detail__html :deep(ul + p),
+.notice-detail__html :deep(ol + p),
+.notice-detail__html :deep(ul + ul),
+.notice-detail__html :deep(ol + ol) {
+  margin-top: 10px;
+}
+
+.notice-detail__html :deep(ul),
+.notice-detail__html :deep(ol) {
+  padding-left: 20px;
+}
+
+.notice-detail__html :deep(img) {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.notice-detail__empty {
+  font-size: 15px;
   color: #86909c;
 }
 
-.detail-stat strong {
-  display: block;
+.notice-detail__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 30px;
+  border-top: 1px solid #edf1f7;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.notice-detail__footer-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
-  font-weight: 700;
-  line-height: 1.5;
-  color: #1d2129;
+  color: #6b778c;
 }
 
-.detail-panels {
-  padding: 24px;
-}
-
-.detail-container :deep(.arco-descriptions-item-label) {
-  width: 110px;
-  font-weight: 600;
-  color: #4e5969;
-  background-color: #f7f8fa;
-}
-
-.target-summary {
-  min-height: 48px;
-  padding: 4px 0;
-}
-
-.content-preview {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 18px;
-  border: 1px solid #edf0f5;
+.notice-detail__footer-btn {
+  min-width: 92px;
+  height: 40px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #fcfdff 0%, #f6f8fb 100%);
-  line-height: 1.7;
-  color: #1d2129;
-}
-
-.content-preview :deep(img) {
-  max-width: 100%;
 }
 
 /* 移动端适配 */
 @media (max-width: 768px) {
+  .notice-detail-modal :deep(.arco-modal) {
+    max-height: calc(100vh - 32px);
+    margin: 16px auto;
+  }
+
   .snow-page {
     padding: 0;
   }
@@ -1490,20 +1686,8 @@ onBeforeUnmount(() => {
   }
 
   .modal-banner,
-  .detail-hero,
-  .form-layout,
-  .detail-panels {
+  .form-layout {
     padding: 16px;
-  }
-
-  .modal-banner,
-  .detail-hero {
-    flex-direction: column;
-  }
-
-  .modal-banner__title,
-  .detail-hero__title {
-    font-size: 20px;
   }
 
   .modal-banner__meta {
@@ -1557,21 +1741,6 @@ onBeforeUnmount(() => {
     font-size: 13px;
   }
 
-  .detail-stats {
-    min-width: 0;
-    width: 100%;
-    grid-template-columns: 1fr;
-  }
-
-  .detail-container :deep(.arco-descriptions-item-label) {
-    width: 80px;
-    font-size: 12px;
-  }
-
-  .detail-container :deep(.arco-descriptions-item-content) {
-    font-size: 12px;
-  }
-
   .crm-modal :deep(.arco-modal-header) {
     padding: 12px 16px;
   }
@@ -1582,6 +1751,49 @@ onBeforeUnmount(() => {
 
   .crm-modal :deep(.arco-modal-footer) {
     padding: 12px 16px;
+  }
+
+  .notice-detail__hero,
+  .notice-detail__body,
+  .notice-detail__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .notice-detail__hero {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .notice-detail__close {
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .notice-detail__title {
+    max-width: 100%;
+    padding-right: 40px;
+    font-size: 20px;
+  }
+
+  .notice-detail__content-card {
+    gap: 14px;
+    padding: 20px 16px;
+  }
+
+  .notice-detail__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notice-detail__footer-tip {
+    justify-content: center;
+  }
+
+  .notice-detail__footer-btn {
+    width: 100%;
   }
 }
 </style>

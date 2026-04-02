@@ -22,12 +22,14 @@
             </a-button>
         </a-tooltip>
         <!-- 通知 -->
-        <a-popover position="bottom" trigger="click">
-            <a-button size="mini" type="text" class="icon_btn notice" id="system-notice">
-                <template #icon>
-                    <icon-notification :size="18" />
-                </template>
-            </a-button>
+        <a-popover position="bottom" trigger="click" @popup-visible-change="handleNoticeVisibleChange">
+            <a-badge :count="totalNoticeCount" :max-count="99" class="notice-badge">
+                <a-button size="mini" type="text" class="icon_btn notice" id="system-notice">
+                    <template #icon>
+                        <icon-notification :size="18" />
+                    </template>
+                </a-button>
+            </a-badge>
             <template #content>
                 <Notice />
             </template>
@@ -158,26 +160,28 @@
 import Notice from "@/layout/components/Header/components/Notice/index.vue";
 import SystemSettings from "@/layout/components/Header/components/system-settings/index.vue";
 import ThemeSettings from "@/layout/components/Header/components/theme-settings/index.vue";
-//import myImage from "@/assets/img/my-image.jpg";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Modal } from "@arco-design/web-vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-//import { useUserInfoStore } from "@/store/modules/user-info";
 import { useThemeConfig } from "@/store/modules/theme-config";
 import { useThemeMethods } from "@/hooks/useThemeMethods";
 import { useDevicesSize } from "@/hooks/useDevicesSize";
 import { useRouteConfigStore } from "@/store/modules/route-config";
+import { useNoticeStoreHook } from "@/store/modules/notice";
+import { noticeWebSocketClient } from "@/utils/notice-websocket";
 import { logout } from "@/api/user";
+import { useUserStoreHook } from "@/store/modules/user";
+
 const i18n = useI18n();
 const router = useRouter();
 const { isMobile } = useDevicesSize();
 const themeStore = useThemeConfig();
-const { language, darkMode } = storeToRefs(themeStore);
-//const userStore = useUserInfoStore();
-//const { account } = storeToRefs(userStore);
-import { useUserStoreHook } from "@/store/modules/user";
+const { darkMode } = storeToRefs(themeStore);
 const account = useUserStoreHook().account;
+const noticeStore = useNoticeStoreHook();
+const totalNoticeCount = computed(() => noticeStore.unreadCount + noticeStore.businessUnreadCount);
 
 // 判断是否显示切换公司按钮
 const showTenantSwitch = computed(() => {
@@ -204,11 +208,8 @@ const switchTenant = async (tenant: any) => {
         closable: true,
         onBeforeOk: async () => {
             try {
-                // 调用切换公司 API
                 await useUserStoreHook().switchTenant(tenant.id);
-                // 重新获取用户信息
                 await useUserStoreHook().getUserInfo();
-                // 刷新页面
                 window.location.reload();
                 return true;
             } catch (error: any) {
@@ -228,11 +229,8 @@ const switchToGlobalTenant = async () => {
         closable: true,
         onBeforeOk: async () => {
             try {
-                // 调用切换公司 API，传入 0 表示全局公司
                 await useUserStoreHook().switchTenant(0);
-                // 重新获取用户信息
                 await useUserStoreHook().getUserInfo();
-                // 刷新页面
                 window.location.reload();
                 return true;
             } catch (error: any) {
@@ -241,6 +239,13 @@ const switchToGlobalTenant = async () => {
             }
         }
     });
+};
+
+const handleNoticeVisibleChange = (visible: boolean) => {
+    if (visible) {
+        noticeStore.markBusinessSeen();
+        noticeWebSocketClient.requestSync();
+    }
 };
 
 // 系统设置
@@ -254,6 +259,7 @@ const themeOpen = ref(false);
 const onThemeSetting = () => {
     themeOpen.value = true;
 };
+
 // 全屏
 const fullScreen = ref(true);
 const onFullScreen = () => {
@@ -273,16 +279,6 @@ const onNightMode = () => {
     darkMode.value = !darkMode.value;
     let { setDarkMode } = useThemeMethods();
     setDarkMode();
-};
-
-// 语言
-const onLange = (value: string) => {
-    if (value === "Chinese" || value === "中文") {
-        themeStore.setLanguage("zh-CN");
-    } else {
-        themeStore.setLanguage("en-US");
-    }
-    i18n.locale.value = language.value;
 };
 
 // 个人中心
@@ -311,19 +307,13 @@ const logOut = () => {
         closable: true,
         onBeforeOk: async () => {
             try {
-                // 用户退出
-                //await userStore.logOut();
                 await logout().catch((error: any) => {
-                    // 根据项目规范，区分是否为请求取消
                     if (!error.isCancelRequest) {
                         console.warn("退出登录API调用失败，但继续执行本地清理:", error);
-                        // 可以选择显示警告信息，但不阻断流程
-                        // Message.warning("退出登录请求失败，但已清理本地数据");
                     }
                 });
                 await useUserStoreHook().logOut();
                 router.replace("/login");
-                // 清除路由数据
                 useRouteConfigStore().resetRoute();
                 return true;
             } catch {
@@ -387,17 +377,17 @@ const logOut = () => {
 
 .notice {
     position: relative;
+}
 
-    &::before {
-        position: absolute;
-        top: -4px;
-        right: -2px;
-        width: 6px;
-        height: 6px;
-        content: "";
-        background: $color-danger;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
+.notice-badge {
+    :deep(.arco-badge-number) {
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        box-shadow: 0 0 0 2px $color-bg-2;
     }
 }
 

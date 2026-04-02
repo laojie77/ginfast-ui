@@ -2,7 +2,7 @@ import { ref } from 'vue';
 import type { SysNoticeInboxData } from '../api/sysnotice';
 import {
     getInboxList,
-    getInboxDetail,
+    getInboxDetail as getInboxDetailAPI,
     markRead,
     markAllRead,
     getUnreadCount
@@ -35,9 +35,9 @@ export const useInboxHook = () => {
         }
     };
 
-    const markAsRead = async (id: number) => {
-        await markRead(id);
-        const item = dataList.value.find((item: SysNoticeInboxData) => item.id === id);
+    const markAsRead = async (noticeId: number) => {
+        await markRead(noticeId);
+        const item = dataList.value.find((item: SysNoticeInboxData) => item.noticeId === noticeId);
         if (item) item.readStatus = 1;
         unreadCount.value = Math.max(0, unreadCount.value - 1);
     };
@@ -49,8 +49,8 @@ export const useInboxHook = () => {
         return response;
     };
 
-    const getInboxDetail = async (id: number) => {
-        const response = await getInboxDetail(id);
+    const getInboxDetail = async (id: number): Promise<any> => {
+        const response = await getInboxDetailAPI(id);
         return response;
     };
 
