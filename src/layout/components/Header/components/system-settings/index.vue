@@ -26,43 +26,43 @@
         </div>
       </div>
       <div>
-        <div class="title">{{ $t(`system.watermark settings`) }}</div>
-        <div class="flex-row">
-          <div>{{ $t(`system.watermark color`) }}</div>
-          <pick-colors
-            :theme="darkMode ? 'dark' : 'light'"
-            show-alpha
-            format="rgb"
-            v-model:value="watermarkStyle.color"
-            :colors="['rgba(0, 0, 0, 0.15)']"
-            :z-index="2000"
-          />
-        </div>
-        <div class="flex-row">
-          <div>{{ $t(`system.watermark text`) }}</div>
-          <a-input :style="{ width: '100px' }" v-model="watermark" 
-          :placeholder="$t(`system.please-enter-something`)" allow-clear />
-        </div>
-        <div class="flex-row">
-          <div>{{ $t(`system.watermark size`) }}</div>
-          <a-slider v-model="watermarkStyle.fontSize" :min="10" :max="50" :style="{ width: '100px' }" />
-        </div>
-        <div class="flex-row">
-          <div>{{ $t(`system.watermark angle`) }}</div>
-          <a-slider v-model="watermarkRotate" :min="0" :max="360" :style="{ width: '100px' }" />
-        </div>
-        <div class="flex-row">
-          <div>{{ $t(`system.watermark gap`) }}</div>
-          <a-slider :default-value="gapInfo[0]" :min="0" :max="300" :style="{ width: '100px' }" @change="onWatermarkGap" />
-        </div>
+<!--        <div class="title">{{ $t(`system.watermark settings`) }}</div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.watermark color`) }}</div>-->
+<!--          <pick-colors-->
+<!--            :theme="darkMode ? 'dark' : 'light'"-->
+<!--            show-alpha-->
+<!--            format="rgb"-->
+<!--            v-model:value="watermarkStyle.color"-->
+<!--            :colors="['rgba(0, 0, 0, 0.15)']"-->
+<!--            :z-index="2000"-->
+<!--          />-->
+<!--        </div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.watermark text`) }}</div>-->
+<!--          <a-input :style="{ width: '100px' }" v-model="watermark"-->
+<!--          :placeholder="$t(`system.please-enter-something`)" allow-clear />-->
+<!--        </div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.watermark size`) }}</div>-->
+<!--          <a-slider v-model="watermarkStyle.fontSize" :min="10" :max="50" :style="{ width: '100px' }" />-->
+<!--        </div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.watermark angle`) }}</div>-->
+<!--          <a-slider v-model="watermarkRotate" :min="0" :max="360" :style="{ width: '100px' }" />-->
+<!--        </div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.watermark gap`) }}</div>-->
+<!--          <a-slider :default-value="gapInfo[0]" :min="0" :max="300" :style="{ width: '100px' }" @change="onWatermarkGap" />-->
+<!--        </div>-->
       </div>
-      <div>
-        <div class="title">{{ $t(`system.system settings`) }}</div>
-        <div class="flex-row">
-          <div>{{ $t(`system.anti-debugging`) }}</div>
-          <a-switch v-model="debugPrevention" />
-        </div>
-      </div>
+<!--      <div>-->
+<!--        <div class="title">{{ $t(`system.system settings`) }}</div>-->
+<!--        <div class="flex-row">-->
+<!--          <div>{{ $t(`system.anti-debugging`) }}</div>-->
+<!--          <a-switch v-model="debugPrevention" />-->
+<!--        </div>-->
+<!--      </div>-->
     </div>
   </a-drawer>
 </template>

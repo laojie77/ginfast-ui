@@ -210,6 +210,26 @@
                                         </template>
                                     </a-form-item>
                                 </a-col>
+                              <a-col :span="isMobile ? 24 : 12">
+                                <a-form-item field="customerExportWorkerCount" label="导出wor进程数量">
+                                  <a-input-number
+                                    v-model="configData.platform.customerExportWorkerCount"
+                                    :min="0"
+                                    placeholder="请输入导出wor进程数量"
+                                  />
+                                  <template #extra>
+                                    <div>后台消费导出任务的工人线程/协程数量，0表示不设置，系统默认为2 </div>
+                                  </template>
+                                </a-form-item>
+                              </a-col>
+                              <a-col :span="isMobile ? 24 : 12">
+                                <a-form-item field="watermark" label="是否开启水印">
+                                  <a-switch v-model="configData.platform.watermark">
+                                    <template #checked>开启</template>
+                                    <template #unchecked>关闭</template>
+                                  </a-switch>
+                                </a-form-item>
+                              </a-col>
                             </a-row>
                         </a-form>
                     </a-card>

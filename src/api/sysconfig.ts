@@ -32,6 +32,8 @@ export interface CaptchaConfig {
 export interface PlatformConfig {
     asyncThreshold: number;
     cleanDays: number;
+    customerExportWorkerCount: number;
+    watermark: boolean;
 }
 
 

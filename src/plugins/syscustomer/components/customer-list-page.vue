@@ -159,7 +159,7 @@
               <a-space wrap>
                 <a-button type="primary" @click="handleSearch">查询</a-button>
                 <a-button @click="handleReset">重置</a-button>
-                <a-button v-if="props.showExportAction" :loading="exporting" @click="handleExport">
+                <a-button v-if="props.showExportAction" :loading="exporting" @click="handleExport" v-hasPerm="props.exportPermission">
                   <template #icon>
                     <icon-export />
                   </template>
@@ -172,6 +172,11 @@
                   <span>新增数据</span>
                 </a-button>
               </a-space>
+              <div v-if="activeExportTask" class="customer-export-task-banner">
+                <a-alert :type="activeExportTaskAlertType" :title="activeExportTaskTitle" show-icon>
+                  {{ activeExportTaskSummary }}
+                </a-alert>
+              </div>
             </a-col>
           </a-row>
         </a-form>
@@ -608,7 +613,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../hooks/syscustomer.ts";
 import {
@@ -652,6 +657,10 @@ const { isMobile } = useDevicesSize();
 import { UserInfoKey } from "@/utils/auth.ts";
 import { getLocalStorage } from "@/utils/app.ts";
 import { useSysConfigStore } from "@/store/modules/sys-config.ts"; // 系统配置store
+import {
+  customerExportTaskNoticeEventName,
+  type CustomerExportTaskNoticeDetail
+} from "@/utils/notice-websocket";
 
 interface Props {
   scene?: CustomerListScene;
@@ -662,6 +671,7 @@ interface Props {
   editPermission?: string[];
   deletePermission?: string[];
   detailPermission?: string[];
+  exportPermission?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -672,7 +682,8 @@ const props = withDefaults(defineProps<Props>(), {
   createPermission: () => ["plugins:syscustomersyscustomer:add"],
   editPermission: () => ["plugins:syscustomersyscustomer:edit"],
   detailPermission: () => ["plugins:syscustomersyscustomer:detail"],
-  deletePermission: () => ["plugins:syscustomersyscustomer:delete"]
+  deletePermission: () => ["plugins:syscustomersyscustomer:delete"],
+  exportPermission: () => ["plugins:syscustomersyscustomer:export"]
 });
 
 const userInfo = getLocalStorage<any>(UserInfoKey);
@@ -743,6 +754,22 @@ const {
 const modalVisible = ref(false);
 const formRef = ref();
 const exporting = ref(false);
+
+type ExportTaskStatus = "queued" | "running" | "success" | "failed" | "canceled";
+
+type ExportTaskData = {
+  id: number;
+  status: ExportTaskStatus | string;
+  total: number;
+  processed?: number;
+  progress?: number;
+  affixId?: number;
+  fileName?: string;
+  errorMessage?: string;
+};
+
+const asyncExportTask = ref<ExportTaskData | null>(null);
+const activeExportTask = computed(() => asyncExportTask.value);
 
 // 客户有效性标签管理相关
 const {
@@ -964,15 +991,118 @@ const buildCustomerExportDownloadName = (scene: CustomerListScene | undefined, t
   return `${resolveExportSceneName(scene)}_${formatExportDate(now)}_${formatExportTime(now)}_${buildFrontExportShortCode()}_${total}.csv`;
 };
 
+const handleCustomerExportTaskNotice = (rawEvent: Event) => {
+  const detail = (rawEvent as CustomEvent<CustomerExportTaskNoticeDetail>).detail;
+  if (!detail?.taskId) {
+    return;
+  }
+
+  const currentTask = asyncExportTask.value;
+  if (currentTask && currentTask.id !== detail.taskId) {
+    return;
+  }
+
+  const total = detail.total ?? currentTask?.total ?? 0;
+  const nextTask: ExportTaskData = {
+    id: detail.taskId,
+    status: detail.status,
+    total,
+    processed: currentTask?.processed ?? 0,
+    progress: currentTask?.progress ?? 0,
+    affixId: detail.affixId ?? currentTask?.affixId,
+    fileName: detail.fileName ?? currentTask?.fileName,
+    errorMessage: detail.errorMessage ?? currentTask?.errorMessage
+  };
+
+  if (detail.status === "success") {
+    nextTask.processed = total;
+    nextTask.progress = 100;
+  }
+
+  asyncExportTask.value = nextTask;
+};
+
+const activeExportTaskTitle = computed(() => {
+  const task = asyncExportTask.value;
+  if (!task) {
+    return "";
+  }
+
+  switch (task.status) {
+    case "queued":
+      return "导出任务排队中";
+    case "running":
+      return "导出任务执行中";
+    case "success":
+      return "导出任务已完成";
+    case "failed":
+      return "导出任务失败";
+    case "canceled":
+      return "导出任务已取消";
+    default:
+      return "导出任务状态";
+  }
+});
+
+const activeExportTaskAlertType = computed(() => {
+  const status = asyncExportTask.value?.status;
+  if (status === "success") {
+    return "success";
+  }
+  if (status === "failed" || status === "canceled") {
+    return "error";
+  }
+  if (status === "queued") {
+    return "warning";
+  }
+  return "info";
+});
+
+const activeExportTaskSummary = computed(() => {
+  const task = asyncExportTask.value;
+  if (!task) {
+    return "";
+  }
+
+  switch (task.status) {
+    case "queued":
+      return `任务已进入队列，预计导出 ${task.total || 0} 条数据，请稍候。`;
+    case "running":
+      return `正在导出，已处理 ${task.processed || 0}/${task.total || 0} 条，当前进度 ${task.progress || 0}%。`;
+    case "success":
+      return `导出文件已生成${task.fileName ? `：${task.fileName}` : ""}。`;
+    case "failed":
+      return task.errorMessage || "导出任务执行失败，请稍后重试。";
+    case "canceled":
+      return "导出任务已取消。";
+    default:
+      return "正在同步导出任务状态。";
+  }
+});
+
 const handleExport = async () => {
   exporting.value = true;
   try {
     const params = buildCustomerListParams(searchForm, { pageNum: 1, pageSize: pageSize.value }, props.scene);
     const submitResult = await submitSysCustomerExport(params);
     if (submitResult.data.mode === "async") {
-      Message.success(submitResult.data.message || "数据量较大，已转为异步导出，请留意右上角通知。");
+      const exportMessage = submitResult.data.message || "数据量较大，已转为异步导出，完成后会弹出下载提醒。";
+      const taskId = Number(submitResult.data.taskId || 0);
+      asyncExportTask.value = taskId > 0 ? {
+        id: taskId,
+        status: submitResult.data.status || "queued",
+        total: Number(submitResult.data.total || 0),
+        processed: 0,
+        progress: 0
+      } : null;
+      if (submitResult.data.existing) {
+        Message.info(exportMessage);
+      } else {
+        Message.success(exportMessage);
+      }
       return;
     }
+    asyncExportTask.value = null;
     const response = await exportSysCustomerList(params);
     const blob = new Blob([response], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
@@ -1414,6 +1544,7 @@ const fetchChannelData = async () => {
 };
 
 onMounted(async () => {
+  window.addEventListener(customerExportTaskNoticeEventName, handleCustomerExportTaskNotice as EventListener);
   // 初始化加载数据
   await loadData();
   // 加载渠道数据
@@ -1425,9 +1556,17 @@ onMounted(async () => {
   // 确保系统配置已加载
   await sysConfigStore.getConfig();
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener(customerExportTaskNoticeEventName, handleCustomerExportTaskNotice as EventListener);
+});
 </script>
 
 <style scoped lang="scss">
+.customer-export-task-banner {
+  margin-top: 12px;
+}
+
 .customer-editor {
   --editor-border: rgba(15, 35, 95, 0.08);
   --editor-shadow: 0 18px 40px rgba(15, 35, 95, 0.08);

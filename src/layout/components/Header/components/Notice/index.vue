@@ -356,7 +356,7 @@ const handleBusinessClick = async (event: NoticeBusinessEvent) => {
 }
 
 .notice-list--business {
-  max-height: 144px;
+  max-height: 200px;
 }
 
 .notice-list--notice {

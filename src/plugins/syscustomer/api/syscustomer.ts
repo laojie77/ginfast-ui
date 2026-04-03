@@ -119,6 +119,23 @@ export type SysCustomerExportSubmitResult = BaseResult<{
   mode: "sync" | "async";
   total: number;
   message?: string;
+  taskId?: number;
+  status?: string;
+  existing?: boolean;
+}>;
+
+export type SysCustomerExportTaskResult = BaseResult<{
+  id: number;
+  status: "queued" | "running" | "success" | "failed" | "canceled";
+  total: number;
+  processed: number;
+  progress: number;
+  affixId?: number;
+  fileName?: string;
+  errorMessage?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  updatedAt?: string;
 }>;
 
 export interface SysCustomerListParams {
@@ -224,6 +241,10 @@ export const submitSysCustomerExport = (params: Partial<SysCustomerListParams>) 
       }
     }
   );
+};
+
+export const getSysCustomerExportTask = (taskId: number) => {
+  return http.request<SysCustomerExportTaskResult>("get", baseUrlApi(`plugins/syscustomer/syscustomer/exportTask/${taskId}`));
 };
 
 export const createSysCustomer = (data: SysCustomerCreateParams) => {

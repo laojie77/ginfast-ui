@@ -23,6 +23,80 @@ interface SocketMessage<T = any> {
 }
 
 const affixListRoute = "/system/affix";
+const exportNotificationDedupWindow = 15000;
+const exportNotificationShownAt = new Map<string, number>();
+
+export const customerExportTaskNoticeEventName = "customer-export-task-notice";
+
+export interface CustomerExportTaskNoticeDetail {
+  taskId: number;
+  status: "success" | "failed";
+  affixId?: number;
+  fileName?: string;
+  total?: number;
+  errorMessage?: string;
+  timestamp?: number;
+}
+
+const buildExportNotificationDedupKey = (event: NoticeBusinessEvent, fallbackPrefix: string) => {
+  const taskId = Number(event.extra?.taskId || 0);
+  const affixId = Number(event.extra?.affixId || event.action?.value || 0);
+  if (taskId > 0) {
+    return `${fallbackPrefix}:task:${taskId}`;
+  }
+  if (affixId > 0) {
+    return `${fallbackPrefix}:affix:${affixId}`;
+  }
+  if (event.id) {
+    return `${fallbackPrefix}:event:${event.id}`;
+  }
+  return `${fallbackPrefix}:title:${String(event.title || "").trim()}`;
+};
+
+const canOpenExportNotification = (key: string) => {
+  const now = Date.now();
+  for (const [existingKey, shownAt] of exportNotificationShownAt.entries()) {
+    if (now-shownAt > exportNotificationDedupWindow) {
+      exportNotificationShownAt.delete(existingKey);
+    }
+  }
+
+  const lastShownAt = exportNotificationShownAt.get(key);
+  if (lastShownAt && now-lastShownAt < exportNotificationDedupWindow) {
+    return false;
+  }
+
+  exportNotificationShownAt.set(key, now);
+  return true;
+};
+
+const emitCustomerExportTaskNotice = (
+  event: NoticeBusinessEvent,
+  status: CustomerExportTaskNoticeDetail["status"]
+) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const taskId = Number(event.extra?.taskId || 0);
+  if (!Number.isFinite(taskId) || taskId <= 0) {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent<CustomerExportTaskNoticeDetail>(customerExportTaskNoticeEventName, {
+      detail: {
+        taskId,
+        status,
+        affixId: Number(event.extra?.affixId || event.action?.value || 0) || undefined,
+        fileName: String(event.extra?.fileName || "").trim() || undefined,
+        total: Number(event.extra?.total || 0) || undefined,
+        errorMessage: String(event.extra?.reason || event.content || "").trim() || undefined,
+        timestamp: event.timestamp
+      }
+    })
+  );
+};
 
 const resolveDownloadURL = (url: string) => {
   if (!url) {
@@ -61,7 +135,12 @@ const downloadExportAffix = async (event: NoticeBusinessEvent) => {
   }
 };
 
-const openExportReadyNotification = (event: NoticeBusinessEvent) => {
+export const openExportReadyNotification = (event: NoticeBusinessEvent) => {
+  const dedupKey = buildExportNotificationDedupKey(event, "export_ready");
+  if (!canOpenExportNotification(dedupKey)) {
+    return;
+  }
+
   let notificationRef: { close: () => void } | undefined;
   const fileName = String(event.extra?.fileName || "").trim();
 
@@ -111,6 +190,21 @@ const openExportReadyNotification = (event: NoticeBusinessEvent) => {
           ]
         }
       )
+  });
+};
+
+export const openExportFailedNotification = (event: NoticeBusinessEvent) => {
+  const dedupKey = buildExportNotificationDedupKey(event, "export_failed");
+  if (!canOpenExportNotification(dedupKey)) {
+    return;
+  }
+
+  Notification.error({
+    title: event.title || "导出失败",
+    content: event.content || "导出任务执行失败，请稍后重试。",
+    position: "bottomRight",
+    duration: 8000,
+    closable: true
   });
 };
 
@@ -241,12 +335,24 @@ class NoticeWebSocketClient {
       case "business_notice": {
         const data = (payload.data || {}) as NoticeBusinessEvent;
         if (data.scene === "export_download") {
+          emitCustomerExportTaskNotice(data, "success");
           openExportReadyNotification(data);
+          break;
+        }
+        if (data.scene === "export_failed") {
+          emitCustomerExportTaskNotice(data, "failed");
+          openExportFailedNotification(data);
+          break;
+        }
+        if (data.scene === "export_queue") {
+          break;
+        }
+
+        noticeStore.applyBusinessEvent(data);
+        if (data.title) {
+          Message.info(data.title);
         } else {
-          noticeStore.applyBusinessEvent(data);
-          if (data.title) {
-            Message.info(data.title);
-          }
+          Message.info("收到新的业务提醒");
         }
         break;
       }
