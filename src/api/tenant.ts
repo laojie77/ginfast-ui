@@ -22,6 +22,7 @@ export interface Tenant {
   smsStatus: number
   isPublic: number
   isRepeatNeed: number
+  isWatermark: number
 }
 
 /** 公司列表响应 */

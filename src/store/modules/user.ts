@@ -15,6 +15,7 @@ export const useUserStore = defineStore("user", () => {
         avatar: userInfo?.avatar ?? "",
         username: userInfo?.username ?? "",
         nickname: userInfo?.nickname ?? "",
+        phone: userInfo?.phone ?? "",
         roles: userInfo?.roles ?? [],
         permissions: userInfo?.permissions ?? [],
         tenantID: userInfo?.tenantID ?? 0,         
@@ -55,6 +56,7 @@ export const useUserStore = defineStore("user", () => {
         account.value.avatar = "";
         account.value.username = "";
         account.value.nickname = "";
+        account.value.phone = "";
         account.value.roles = [];
         account.value.permissions = [];
         account.value.tenantID = 0;
@@ -95,6 +97,7 @@ export const useUserStore = defineStore("user", () => {
             account.value.username = data.userName;
             account.value.nickname = data.nickName;
             account.value.avatar = handleUrl(data.avatar);
+            account.value.phone = data.phone;
             account.value.roles = data.roleIDs;
             account.value.permissions = data.permissions;
             account.value.tenantID = data.tenantID;

@@ -46,7 +46,9 @@ const sysConfigStore = () => {
     // 导出配置数据
     const platformConfig = ref<PlatformConfig>({
         asyncThreshold: 1,
-        cleanDays: 3
+        cleanDays: 3,
+        customerExportWorkerCount: 1,
+        watermark: false
     });
 
     // 客户资质配置数据
@@ -149,7 +151,9 @@ const sysConfigStore = () => {
 
         platformConfig.value = {
             asyncThreshold: 1,
-            cleanDays: 3
+            cleanDays: 3,
+            customerExportWorkerCount: 1,
+            watermark: false
         };
 
         customerExtraConfig.value = {};

@@ -4,6 +4,7 @@ export type userType = {
   avatar: string;
   username: string;
   nickname: string;
+  phone: string;
   roles: Array<number>;
   permissions: Array<string>;
   tenantID: number;

@@ -68,7 +68,6 @@
 </template>
 
 <script setup lang="ts">
-import PickColors from "vue-pick-colors";
 import { storeToRefs } from "pinia";
 import { useRouteConfigStore } from "@/store/modules/route-config";
 import { useThemeConfig } from "@/store/modules/theme-config";
@@ -82,11 +81,6 @@ const {
   isBreadcrumb,
   isTabs,
   isFooter,
-  watermark,
-  watermarkStyle,
-  watermarkRotate,
-  watermarkGap,
-  darkMode,
   debugPrevention
 } = storeToRefs(themeStore);
 const { tabsList, cacheRoutes } = storeToRefs(routerStore);
@@ -97,11 +91,6 @@ const props = defineProps({
     default: false
   }
 });
-
-const gapInfo = ref(watermarkGap.value);
-const onWatermarkGap = (e: number) => {
-  watermarkGap.value = watermarkGap.value.map(() => e);
-};
 
 /*
   是否关闭tabs栏

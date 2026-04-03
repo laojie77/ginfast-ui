@@ -85,7 +85,6 @@
                               <a-switch v-model="record.isRepeatNeed" :checked-value="1" :unchecked-value="0" @change="(value) => handleSwitchChange(record, 'isRepeatNeed', value)" />
                             </template>
                           </a-table-column>
-
                             <a-table-column title="域名" data-index="domain" :ellipsis="true" tooltip :width="150">
                                 <template #cell="{ record }">
                                     {{ record.domain || '-' }}
@@ -196,6 +195,12 @@
                   <a-radio :value="0">否</a-radio>
                 </a-radio-group>
               </a-form-item>
+              <a-form-item field="isRepeatNeed" label="开启水印">
+                <a-radio-group v-model="modalFormModel.isWatermark">
+                  <a-radio :value="1">是</a-radio>
+                  <a-radio :value="0">否</a-radio>
+                </a-radio-group>
+              </a-form-item>
                 <a-form-item field="menuPermission" label="菜单权限">
                     <a-scrollbar style="height:400px;overflow: auto;">
                         <menu-permission-tree v-model="modalFormModel.menuPermission" />
@@ -268,7 +273,8 @@ const modalFormModel = reactive({
     workEndTime: '',
     smsStatus: 0,
     isPublic: 1,
-    isRepeatNeed: 1
+    isRepeatNeed: 1,
+    isWatermark:1
 })
 
 // 计算属性：用于前端时间范围选择器
@@ -318,7 +324,8 @@ const fetchData = async () => {
             status: formModel.status,
           smsStatus: formModel.smsStatus,
           isPublic: formModel.isPublic,
-          isRepeatNeed: formModel.isRepeatNeed
+          isRepeatNeed: formModel.isRepeatNeed,
+          isWatermark: formModel.isWatermark
         }
         const res = await getTenantList(params)
         renderData.value = res.data.list
@@ -342,6 +349,7 @@ const reset = () => {
     formModel.smsStatus = undefined
     formModel.isPublic = undefined
     formModel.isRepeatNeed = undefined
+    formModel.isWatermark = undefined
     pagination.current = 1
     fetchData()
 }
@@ -370,6 +378,7 @@ const handleAdd = () => {
     modalFormModel.smsStatus = 0
     modalFormModel.isPublic = 1
     modalFormModel.isRepeatNeed = 1
+    modalFormModel.isWatermark = 1
     modalFormModel.platformDomain = ''
     modalFormModel.menuPermission = ''
     modalFormModel.city = ''
@@ -403,6 +412,7 @@ const handleEdit = async (record: Tenant) => {
         modalFormModel.smsStatus = data.smsStatus
         modalFormModel.isPublic = data.isPublic || 1
         modalFormModel.isRepeatNeed = data.isRepeatNeed || 1
+        modalFormModel.isWatermark = data.isWatermark || 1
         modalFormModel.platformDomain = data.platformDomain || ''
         modalFormModel.city = data.city || ''
         modalFormModel.workStartTime = data.workStartTime || ''
