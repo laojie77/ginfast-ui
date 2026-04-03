@@ -28,6 +28,12 @@ export interface CaptchaConfig {
     length: number;
 }
 
+// 导出配置参数
+export interface PlatformConfig {
+    asyncThreshold: number;
+    cleanDays: number;
+}
+
 
 
 // 配置响应数据
@@ -35,6 +41,9 @@ export interface ConfigResponseData {
     system: SystemConfig;
     captcha: CaptchaConfig;
     safe: SafeConfig;
+    platform: PlatformConfig;
+    export?: PlatformConfig;
+    customerExtra?: any;
 }
 
 // 配置请求参数
@@ -42,6 +51,8 @@ export interface ConfigRequestData {
     system: SystemConfig;
     safe: SafeConfig;
     captcha: CaptchaConfig;
+    platform: PlatformConfig;
+    export?: PlatformConfig;
     customerExtra?: any;
 }
 

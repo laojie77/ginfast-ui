@@ -159,6 +159,12 @@
               <a-space wrap>
                 <a-button type="primary" @click="handleSearch">查询</a-button>
                 <a-button @click="handleReset">重置</a-button>
+                <a-button v-if="props.showExportAction" :loading="exporting" @click="handleExport">
+                  <template #icon>
+                    <icon-export />
+                  </template>
+                  <span>导出数据</span>
+                </a-button>
                 <a-button v-if="props.showCreateAction" type="primary" @click="handleCreate" v-hasPerm="props.createPermission">
                   <template #icon>
                     <icon-plus />
@@ -605,7 +611,14 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../hooks/syscustomer.ts";
-import type { CustomerListScene, SysCustomerCreateParams, SysCustomerData, SysCustomerUpdateParams } from "../api/syscustomer.ts";
+import {
+  exportSysCustomerList,
+  submitSysCustomerExport,
+  type CustomerListScene,
+  type SysCustomerCreateParams,
+  type SysCustomerData,
+  type SysCustomerUpdateParams
+} from "../api/syscustomer.ts";
 import { formatTime, getDictOptionName } from "@/globals";
 import { useDevicesSize } from "@/hooks/useDevicesSize.ts";
 import { verifyPhone } from "@/utils/verify-tools.ts";
@@ -644,6 +657,7 @@ interface Props {
   scene?: CustomerListScene;
   presetSearchForm?: Partial<CustomerListSearchForm>;
   showCreateAction?: boolean;
+  showExportAction?: boolean;
   createPermission?: string[];
   editPermission?: string[];
   deletePermission?: string[];
@@ -654,6 +668,7 @@ const props = withDefaults(defineProps<Props>(), {
   scene: "all",
   presetSearchForm: () => ({}),
   showCreateAction: true,
+  showExportAction: false,
   createPermission: () => ["plugins:syscustomersyscustomer:add"],
   editPermission: () => ["plugins:syscustomersyscustomer:edit"],
   detailPermission: () => ["plugins:syscustomersyscustomer:detail"],
@@ -727,6 +742,7 @@ const {
 
 const modalVisible = ref(false);
 const formRef = ref();
+const exporting = ref(false);
 
 // 客户有效性标签管理相关
 const {
@@ -889,6 +905,88 @@ const commentExpandedKeys = computed(() =>
 const loadData = async (pageNum: number = currentPage.value, pageSizeVal: number = pageSize.value) => {
   const params = buildCustomerListParams(searchForm, { pageNum, pageSize: pageSizeVal }, props.scene);
   await fetchDataList(params);
+};
+
+const resolveExportSceneName = (scene?: CustomerListScene) => {
+  switch (scene) {
+    case "all":
+      return "全部客户";
+    case "my":
+      return "我的客户";
+    case "public":
+      return "公共池客户";
+    case "exchange":
+      return "待流转客户";
+    case "reassign":
+      return "再分配客户";
+    case "locked":
+      return "锁定客户";
+    case "intention2":
+      return "无效客户";
+    case "intention3":
+      return "黑名单客户";
+    case "status0":
+      return "待处理客户";
+    default:
+      return "全部客户";
+  }
+};
+
+const formatExportDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}${month}${day}`;
+};
+
+const formatExportTime = (date: Date) => {
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  const seconds = `${date.getSeconds()}`.padStart(2, "0");
+  return `${hours}${minutes}${seconds}`;
+};
+
+const buildFrontExportShortCode = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const values = new Uint16Array(1);
+    crypto.getRandomValues(values);
+    return values[0].toString(36).toUpperCase().padStart(4, "0").slice(-4);
+  }
+
+  return Math.floor(Math.random() * 1679616)
+    .toString(36)
+    .toUpperCase()
+    .padStart(4, "0");
+};
+
+const buildCustomerExportDownloadName = (scene: CustomerListScene | undefined, total: number) => {
+  const now = new Date();
+  return `${resolveExportSceneName(scene)}_${formatExportDate(now)}_${formatExportTime(now)}_${buildFrontExportShortCode()}_${total}.csv`;
+};
+
+const handleExport = async () => {
+  exporting.value = true;
+  try {
+    const params = buildCustomerListParams(searchForm, { pageNum: 1, pageSize: pageSize.value }, props.scene);
+    const submitResult = await submitSysCustomerExport(params);
+    if (submitResult.data.mode === "async") {
+      Message.success(submitResult.data.message || "数据量较大，已转为异步导出，请留意右上角通知。");
+      return;
+    }
+    const response = await exportSysCustomerList(params);
+    const blob = new Blob([response], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = buildCustomerExportDownloadName(props.scene, Number(submitResult.data.total || 0));
+    link.click();
+    window.URL.revokeObjectURL(url);
+    Message.success("导出成功");
+  } catch (error) {
+    console.error("导出客户失败:", error);
+  } finally {
+    exporting.value = false;
+  }
 };
 
 // 处理分页变化

@@ -83,6 +83,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { Message } from "@arco-design/web-vue";
+import { downloadAffixAPI } from "@/api/file";
+import { getBaseUrl } from "@/api/utils";
 import { dictFilter, formatTime } from "@/globals";
 import { formatRelativeTime, getNoticeLevelTheme, getNoticeSummary } from "@/utils/notice-tools";
 import { noticeWebSocketClient } from "@/utils/notice-websocket";
@@ -198,7 +201,17 @@ const handleRefresh = () => {
   noticeWebSocketClient.requestSync();
 };
 
-const handleBusinessClick = (event: NoticeBusinessEvent) => {
+const resolveDownloadURL = (url: string) => {
+  if (!url) {
+    return "";
+  }
+
+  const baseUrl = getBaseUrl();
+  const base = baseUrl || window.location.origin;
+  return new URL(url, base).toString();
+};
+
+const handleBusinessClick = async (event: NoticeBusinessEvent) => {
   noticeStore.markBusinessSeen();
 
   const action = event.action;
@@ -210,6 +223,31 @@ const handleBusinessClick = (event: NoticeBusinessEvent) => {
   if (action.kind === "route") {
     router.push(action.value);
     return;
+  }
+
+  if (action.kind === "download") {
+    const affixId = Number(action.value || event.extra?.affixId);
+    if (Number.isFinite(affixId) && affixId > 0) {
+      try {
+        const response = await downloadAffixAPI(affixId);
+        const fileURL = resolveDownloadURL(response.data.url);
+        if (!fileURL) {
+          Message.error("导出文件地址无效");
+          return;
+        }
+        const link = document.createElement("a");
+        link.href = fileURL;
+        if (response.data.name) {
+          link.setAttribute("download", response.data.name);
+        }
+        link.click();
+        return;
+      } catch (error) {
+        console.error("download notice file failed:", error);
+        Message.error("下载导出文件失败，请稍后重试");
+        return;
+      }
+    }
   }
 
   const target = action.openMode === "self" ? "_self" : "_blank";

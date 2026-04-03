@@ -181,6 +181,40 @@
                     </a-card>
                 </a-tab-pane>
 
+                <!-- 导出配置 -->
+                <a-tab-pane key="platform" title="平台配置">
+                    <a-card :bordered="false" class="mb-4">
+                        <a-form :layout="layoutMode.layout" :model="configData.platform" auto-label-width>
+                            <a-row :gutter="24">
+                                <a-col :span="isMobile ? 24 : 12">
+                                    <a-form-item field="exportAsyncThreshold" label="异步导出阈值">
+                                        <a-input-number
+                                            v-model="configData.platform.exportAsyncThreshold"
+                                            :min="0"
+                                            placeholder="请输入异步导出阈值"
+                                        />
+                                        <template #extra>
+                                            <div>导出总数大于该值时走异步导出，设置为 0 可强制全部走异步，方便测试。</div>
+                                        </template>
+                                    </a-form-item>
+                                </a-col>
+                                <a-col :span="isMobile ? 24 : 12">
+                                    <a-form-item field="exportCleanDays" label="导出清理天数">
+                                        <a-input-number
+                                            v-model="configData.platform.exportCleanDays"
+                                            :min="0"
+                                            placeholder="请输入导出清理天数"
+                                        />
+                                        <template #extra>
+                                            <div>仅清理客户导出文件。设置为 0 表示每次导出前立马清理历史导出文件，大于 0 表示按天数保留。</div>
+                                        </template>
+                                    </a-form-item>
+                                </a-col>
+                            </a-row>
+                        </a-form>
+                    </a-card>
+                </a-tab-pane>
+
                 <!-- 客户资质配置 -->
                 <a-tab-pane key="customerExtra" title="客户资质配置">
                     <div class="customer-extra-container">
@@ -269,6 +303,7 @@ const configData = ref({
     system: sysConfigStore.systemConfig,
     captcha: sysConfigStore.captchaConfig,
     safe: sysConfigStore.safeConfig,
+    platform: sysConfigStore.platformConfig,
     customerExtra: {}
 });
 
@@ -318,6 +353,7 @@ const getConfig = async () => {
             system: sysConfigStore.systemConfig,
             captcha: sysConfigStore.captchaConfig,
             safe: sysConfigStore.safeConfig,
+            platform: sysConfigStore.platformConfig,
             customerExtra: sysConfigStore.customerExtraConfig || {}
         };
     } catch (error) {

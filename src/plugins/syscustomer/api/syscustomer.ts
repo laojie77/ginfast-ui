@@ -115,6 +115,12 @@ export type SysCustomerListResult = BaseResult<{
   total: number;
 }>;
 
+export type SysCustomerExportSubmitResult = BaseResult<{
+  mode: "sync" | "async";
+  total: number;
+  message?: string;
+}>;
+
 export interface SysCustomerListParams {
   pageNum: number;
   pageSize: number;
@@ -191,6 +197,33 @@ export interface SysCustomerStatusTraceUpdateParams {
 
 export const getSysCustomerList = (params: SysCustomerListParams) => {
   return http.request<SysCustomerListResult>("get", baseUrlApi("plugins/syscustomer/syscustomer/list"), { params });
+};
+
+export const exportSysCustomerList = (params: Partial<SysCustomerListParams>) => {
+  return http.request<Blob>(
+    "get",
+    baseUrlApi("plugins/syscustomer/syscustomer/list"),
+    {
+      params: {
+        ...params,
+        export: 1
+      },
+      responseType: "blob"
+    }
+  );
+};
+
+export const submitSysCustomerExport = (params: Partial<SysCustomerListParams>) => {
+  return http.request<SysCustomerExportSubmitResult>(
+    "get",
+    baseUrlApi("plugins/syscustomer/syscustomer/list"),
+    {
+      params: {
+        ...params,
+        export: "submit"
+      }
+    }
+  );
 };
 
 export const createSysCustomer = (data: SysCustomerCreateParams) => {

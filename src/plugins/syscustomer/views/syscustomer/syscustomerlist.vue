@@ -1,5 +1,5 @@
 <template>
-  <CustomerListPage scene="all" />
+  <CustomerListPage scene="all" show-export-action />
 </template>
 
 <script setup lang="ts">

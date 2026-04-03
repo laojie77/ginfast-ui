@@ -7,6 +7,7 @@ import type {
     SystemConfig,
     SafeConfig,
     CaptchaConfig,
+    PlatformConfig,
     ConfigRequestData
 } from "@/api/sysconfig";
 import { handleUrl } from "@/utils/app"
@@ -42,6 +43,12 @@ const sysConfigStore = () => {
         length: 0
     });
 
+    // 导出配置数据
+    const platformConfig = ref<PlatformConfig>({
+        asyncThreshold: 1,
+        cleanDays: 3
+    });
+
     // 客户资质配置数据
     const customerExtraConfig = ref<any>({});
 
@@ -68,6 +75,7 @@ const sysConfigStore = () => {
                 systemConfig.value = data.system || systemConfig.value;
                 safeConfig.value = data.safe || safeConfig.value;
                 captchaConfig.value = data.captcha || captchaConfig.value;
+                platformConfig.value = data.platform || data.export || platformConfig.value;
                 customerExtraConfig.value = data.customerExtra || {};
             }
 
@@ -96,6 +104,9 @@ const sysConfigStore = () => {
                 }
                 if (configData.captcha) {
                     captchaConfig.value = { ...captchaConfig.value, ...configData.captcha };
+                }
+                if (configData.platform) {
+                    platformConfig.value = { ...platformConfig.value, ...configData.platform };
                 }
                 if (configData.customerExtra) {
                     customerExtraConfig.value = { ...customerExtraConfig.value, ...configData.customerExtra };
@@ -136,6 +147,11 @@ const sysConfigStore = () => {
             length: 0
         };
 
+        platformConfig.value = {
+            asyncThreshold: 1,
+            cleanDays: 3
+        };
+
         customerExtraConfig.value = {};
     }
 
@@ -143,6 +159,7 @@ const sysConfigStore = () => {
         systemConfig,
         safeConfig,
         captchaConfig,
+        platformConfig,
         customerExtraConfig,
         loading,
         systemLogo,
@@ -158,6 +175,7 @@ export const useSysConfigStore = defineStore("sys-config", sysConfigStore, {
         "systemConfig",
         "safeConfig",
         "captchaConfig",
+        "platformConfig",
         "customerExtraConfig"
     ])
 });

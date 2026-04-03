@@ -86,5 +86,5 @@ export const getAffixDetailAPI = (id: number) => {
 
 // 获取文件URL
 export const downloadAffixAPI = (id: number) => {
-    return http.request<BaseResult<{ url: string }>>("get", baseUrlApi(`sysAffix/download/${id}`));
+    return http.request<BaseResult<{ url: string; name?: string; id?: number; path?: string }>>("get", baseUrlApi(`sysAffix/download/${id}`));
 };
