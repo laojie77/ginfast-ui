@@ -12,5 +12,6 @@ export type userType = {
   tenantName: string;
   tenantDomain: string;
   defaultTenant?: Tenant;
+  isWatermark?: number | null;
   tenants?: Array<Tenant>;
 };

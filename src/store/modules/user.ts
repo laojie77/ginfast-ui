@@ -23,6 +23,7 @@ export const useUserStore = defineStore("user", () => {
         tenantName: userInfo?.tenantName ?? "",
         tenantDomain: userInfo?.tenantDomain ?? "", // 完整的公司域名
         defaultTenant: userInfo?.defaultTenant, // 默认所属公司
+        isWatermark: userInfo?.isWatermark, // 公司水印
         tenants: userInfo?.tenants,    // 关联的公司列表
     });
 

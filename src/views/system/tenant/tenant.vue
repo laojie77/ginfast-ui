@@ -85,6 +85,11 @@
                               <a-switch v-model="record.isRepeatNeed" :checked-value="1" :unchecked-value="0" @change="(value) => handleSwitchChange(record, 'isRepeatNeed', value)" />
                             </template>
                           </a-table-column>
+                          <a-table-column title="水印开启" data-index="isWatermark" :width="100" align="center">
+                            <template #cell="{ record }">
+                              <a-switch v-model="record.isWatermark" :checked-value="1" :unchecked-value="0" @change="(value) => handleSwitchChange(record, 'isWatermark', value)" />
+                            </template>
+                          </a-table-column>
                             <a-table-column title="域名" data-index="domain" :ellipsis="true" tooltip :width="150">
                                 <template #cell="{ record }">
                                     {{ record.domain || '-' }}
@@ -195,7 +200,7 @@
                   <a-radio :value="0">否</a-radio>
                 </a-radio-group>
               </a-form-item>
-              <a-form-item field="isRepeatNeed" label="开启水印">
+              <a-form-item field="isWatermark" label="开启水印">
                 <a-radio-group v-model="modalFormModel.isWatermark">
                   <a-radio :value="1">是</a-radio>
                   <a-radio :value="0">否</a-radio>
@@ -249,7 +254,8 @@ const formModel = reactive({
     status: undefined as number | undefined,
     smsStatus: undefined as number | undefined,
     isPublic: undefined as number | undefined,
-    isRepeatNeed: undefined as number | undefined
+    isRepeatNeed: undefined as number | undefined,
+    isWatermark: undefined as number | undefined
 })
 
 const modalVisible = ref(false)
@@ -410,9 +416,9 @@ const handleEdit = async (record: Tenant) => {
         modalFormModel.description = data.description || ''
         modalFormModel.status = data.status
         modalFormModel.smsStatus = data.smsStatus
-        modalFormModel.isPublic = data.isPublic || 1
-        modalFormModel.isRepeatNeed = data.isRepeatNeed || 1
-        modalFormModel.isWatermark = data.isWatermark || 1
+        modalFormModel.isPublic = data.isPublic
+        modalFormModel.isRepeatNeed = data.isRepeatNeed
+        modalFormModel.isWatermark = data.isWatermark
         modalFormModel.platformDomain = data.platformDomain || ''
         modalFormModel.city = data.city || ''
         modalFormModel.workStartTime = data.workStartTime || ''

@@ -341,7 +341,7 @@
                 </a-tag>
               </template>
             </a-table-column>
-            <a-table-column title="操作" :width="200" :fixed="isMobile ? undefined : 'right'">
+            <a-table-column title="操作" :width="250" :fixed="isMobile ? undefined : 'right'">
               <template #cell="{ record }">
                 <a-space>
                   <a-button size="small" type="primary" @click="handleViewDetail(record)" v-hasPerm="props.detailPermission">

@@ -16,7 +16,7 @@ GinFast 是一个功能完备、高颜值、高性能的后台管理模板，致
 
 ### 核心特性
 
-- **现代化技术栈**：Vue3 Composition API + Vite6 + TypeScript + Pinia
+- **现代化技术栈**：Vue3 Composition API + Vite6 + TypeScript + Pinia + node-v20.19.5
 - **开箱即用**：内置动态路由、权限控制、多主题、国际化、标签页管理等功能
 - **代码规范**：集成 ESLint、Prettier、Stylelint 等工具，确保代码风格统一
 - **高性能**：Vite 构建工具提供极速的开发体验和优化的生产构建

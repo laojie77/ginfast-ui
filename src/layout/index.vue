@@ -35,7 +35,7 @@ const getPhoneTail = (phone: string) => {
 };
 
 const watermarkContent = computed(() => {
-  if (!platformConfig.value?.watermark) return undefined;
+  if (!platformConfig.value?.watermark || account.value.isWatermark == null || account.value.isWatermark == 0) return undefined;
 
   const tenantName = account.value.tenantName?.trim() || account.value.defaultTenant?.name?.trim() || "";
   const phoneTail = getPhoneTail(account.value.phone);
