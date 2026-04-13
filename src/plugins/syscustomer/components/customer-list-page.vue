@@ -159,7 +159,7 @@
               <a-space wrap>
                 <a-button type="primary" @click="handleSearch">查询</a-button>
                 <a-button @click="handleReset">重置</a-button>
-                <a-button v-if="props.showExportAction" :loading="exporting" @click="handleExport" v-hasPerm="props.exportPermission">
+                <a-button v-if="props.showExportAction" :loading="exporting" @click="handleExport">
                   <template #icon>
                     <icon-export />
                   </template>
@@ -671,7 +671,6 @@ interface Props {
   editPermission?: string[];
   deletePermission?: string[];
   detailPermission?: string[];
-  exportPermission?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -683,7 +682,6 @@ const props = withDefaults(defineProps<Props>(), {
   editPermission: () => ["plugins:syscustomersyscustomer:edit"],
   detailPermission: () => ["plugins:syscustomersyscustomer:detail"],
   deletePermission: () => ["plugins:syscustomersyscustomer:delete"],
-  exportPermission: () => ["plugins:syscustomersyscustomer:export"]
 });
 
 const userInfo = getLocalStorage<any>(UserInfoKey);

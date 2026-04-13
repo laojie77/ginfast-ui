@@ -248,7 +248,7 @@
                                         </div>
                                     </template>
                                     
-                                    <a-form :layout="layoutMode.layout" auto-label-width>
+                                    <a-form :layout="layoutMode.layout" :model="options" auto-label-width>
                                         <a-row :gutter="[16, 16]">
                                             <a-col v-for="(label, value) in options" :key="value" :span="isMobile ? 24 : 8">
                                                 <a-form-item :label="`选项 ${value}`" class="option-item">
@@ -494,7 +494,7 @@ onMounted(() => {
         color: #4e5969;
     }
     
-    :deep(.arco-input) {
+    :deep(.arco-input-wrapper) {
         border-radius: 6px;
         transition: all 0.3s ease;
         
@@ -502,9 +502,14 @@ onMounted(() => {
             border-color: #165dff;
         }
         
-        &:focus {
+        &:focus-within {
+            border-color: #165dff;
             box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.1);
         }
+    }
+
+    :deep(.arco-input) {
+        background: transparent;
     }
 }
 
