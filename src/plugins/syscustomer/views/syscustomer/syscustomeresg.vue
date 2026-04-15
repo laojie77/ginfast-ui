@@ -1,5 +1,5 @@
 <template>
-  <CustomerListPage  scene="reassign" />
+  <CustomerListPage scene="reassign" show-import-action />
 </template>
 
 <script setup lang="ts">

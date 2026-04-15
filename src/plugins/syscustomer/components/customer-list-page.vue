@@ -30,10 +30,12 @@
               </a-form-item>
             </a-col>
             <a-col :span="isMobile ? 12 : 3">
-              <!-- 渠道来源选择框查询（radio/select/checkbox统一使用select） -->
+              <!-- 渠道来源选择框查询（客户表当前使用渠道来源 ID） -->
               <a-form-item field="channelId" label="渠道来源">
                 <a-select v-model="searchForm.channelId" placeholder="渠道来源" allow-clear>
-                  <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{ item.name }}</a-option>
+                  <a-option v-for="item in channelCompanyOptions" :key="item.value" :value="Number(item.value)">{{
+                    item.name
+                  }}</a-option>
                 </a-select>
               </a-form-item>
             </a-col>
@@ -165,6 +167,28 @@
                   </template>
                   <span>导出数据</span>
                 </a-button>
+                <a-button
+                  v-if="props.showImportAction"
+                  type="primary"
+                  status="success"
+                  @click="openImportModal"
+                  :disabled="importActionInProgress"
+                  :class="[
+                    'customer-import-action-button',
+                    { 'customer-import-action-button--progress': importActionInProgress }
+                  ]"
+                  :style="importActionButtonStyle"
+                  v-hasPerm="props.importPermission"
+                >
+                  <span class="customer-import-action-button__content">
+                    <icon-refresh
+                      v-if="importActionInProgress"
+                      class="customer-import-action-button__icon customer-import-action-button__icon--spin"
+                    />
+                    <icon-upload v-else class="customer-import-action-button__icon" />
+                    <span>{{ importActionButtonLabel }}</span>
+                  </span>
+                </a-button>
                 <a-button v-if="props.showCreateAction" type="primary" @click="handleCreate" v-hasPerm="props.createPermission">
                   <template #icon>
                     <icon-plus />
@@ -172,9 +196,15 @@
                   <span>新增数据</span>
                 </a-button>
               </a-space>
-              <div v-if="activeExportTask" class="customer-export-task-banner">
-                <a-alert :type="activeExportTaskAlertType" :title="activeExportTaskTitle" show-icon>
-                  {{ activeExportTaskSummary }}
+              <div v-if="shouldShowImportResumeReminder && activeImportTask" class="customer-export-task-banner">
+                <a-alert
+                  type="warning"
+                  title="检测到需要续传的导入任务"
+                  show-icon
+                  closable
+                  @close="handleDismissImportResumeReminder"
+                >
+                  {{ importResumeBannerText }}
                 </a-alert>
               </div>
             </a-col>
@@ -265,7 +295,7 @@
             </a-table-column>
             <a-table-column title="渠道来源" data-index="channelId" :width="150" ellipsis tooltip>
               <template #cell="{ record }">
-                {{ channelOption.find(item => item.value === record.channelId)?.name || "" }}
+                {{ channelCompanyOptions.find(item => item.value === record.channelId)?.name || "" }}
               </template>
             </a-table-column>
             <a-table-column title="跟进人" data-index="userName" :width="100" ellipsis tooltip>
@@ -358,6 +388,102 @@
         </a-table>
       </a-card>
 
+      <a-modal
+        v-model:visible="importModalVisible"
+        title="导入客户"
+        :on-before-ok="handleImportConfirm"
+        @cancel="handleImportCancel"
+        :ok-loading="importing"
+        width="560px"
+        okText="确认上传"
+        :body-style="{ padding: '20px' }"
+      >
+        <div class="customer-import-panel">
+          <div class="customer-import-toolbar">
+            <a-button type="outline" @click="handleDownloadImportDemo">
+              <template #icon>
+                <icon-download />
+              </template>
+              下载模板
+            </a-button>
+            <div class="customer-import-toolbar-tip">先下载模板，再填写并上传 .xlsx 文件。</div>
+          </div>
+          <a-form :model="importForm" layout="vertical" class="customer-import-form">
+            <a-form-item field="channelCompanyId" label="导入渠道" required>
+              <div class="customer-import-field">
+                <a-select v-model="importForm.channelCompanyId" placeholder="请选择导入渠道" allow-clear style="width: 100%">
+                  <a-option v-for="item in channelCompanyOptions" :key="item.value" :value="Number(item.value)">
+                    {{ item.name }}
+                  </a-option>
+                </a-select>
+              </div>
+            </a-form-item>
+
+            <a-form-item field="startRow" label="起始导入行">
+              <div class="customer-import-field customer-import-field--stack">
+                <a-input-number
+                  v-model="importForm.startRow"
+                  :min="2"
+                  :step="1"
+                  placeholder="默认从第 2 行开始"
+                  style="width: 100%"
+                />
+                <div class="customer-import-help-text">
+                  {{ importResumeHint }}
+                </div>
+              </div>
+            </a-form-item>
+
+            <a-form-item field="remark" label="批次备注">
+              <div class="customer-import-field">
+                <a-textarea
+                  v-model="importForm.remark"
+                  placeholder="选填，便于区分本次导入批次"
+                  :max-length="255"
+                  show-word-limit
+                  :auto-size="{ minRows: 3, maxRows: 5 }"
+                />
+              </div>
+            </a-form-item>
+
+            <a-form-item field="file" label="导入文件" required>
+              <div class="customer-import-field customer-import-field--stack">
+                <input
+                  ref="importFileInputRef"
+                  class="customer-import-input"
+                  type="file"
+                  accept=".xlsx"
+                  @change="handleImportFileChange"
+                />
+                <div
+                  :class="[
+                    'customer-import-file-card',
+                    importForm.file ? 'customer-import-file-card--ready' : 'customer-import-file-card--idle'
+                  ]"
+                >
+                  <div class="customer-import-file-card-copy">
+                    <div class="customer-import-file-card-title">
+                      {{ importForm.file ? importForm.file.name : "请上传 .xlsx 模板文件" }}
+                    </div>
+                    <div class="customer-import-file-card-desc">
+                      {{ importForm.file ? "文件已就绪" : "" }}
+                    </div>
+                  </div>
+                  <a-button @click="triggerImportFileSelect">
+                    <template #icon>
+                      <icon-upload />
+                    </template>
+                    <div>
+                      {{ importForm.file ? "重新选择文件" : "选择上传文件" }}
+                    </div>
+                  </a-button>
+                </div>
+              </div>
+            </a-form-item>
+          </a-form>
+        </div>
+      </a-modal>
+
       <!-- 编辑/创建弹窗 -->
       <a-modal
         v-model:visible="modalVisible"
@@ -438,7 +564,7 @@
                 <a-col :flex="isMobile ? '100%' : '208px'" class="editor-field-col">
                   <a-form-item field="channelId" label="渠道来源">
                     <a-select v-model="editingData.channelId" placeholder="请选择渠道来源" allow-clear size="large">
-                      <a-option v-for="item in channelOption" :key="item.value" :value="Number(item.value)">{{
+                      <a-option v-for="item in channelCompanyOptions" :key="item.value" :value="Number(item.value)">{{
                         item.name
                       }}</a-option>
                     </a-select>
@@ -598,7 +724,7 @@
       v-model:visible="detailVisible"
       :customer-id="selectedCustomerId"
       :customer-data="selectedCustomerData"
-      :channel-options="channelOption"
+      :channel-options="channelCompanyOptions"
       :follower-options="followerOptions"
       :department-tree="departmentTree"
       :status-options="statusOption"
@@ -613,11 +739,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, h } from "vue";
+import { Button, Message, Modal, Notification, Space } from "@arco-design/web-vue";
 import { useSysCustomerPluginHook } from "../hooks/syscustomer.ts";
 import {
+  cancelSysCustomerImportBatch,
   exportSysCustomerList,
+  getLatestSysCustomerImportBatch,
+  importSysCustomerFile,
   submitSysCustomerExport,
   type CustomerListScene,
   type SysCustomerCreateParams,
@@ -658,8 +787,9 @@ import { UserInfoKey } from "@/utils/auth.ts";
 import { getLocalStorage } from "@/utils/app.ts";
 import { useSysConfigStore } from "@/store/modules/sys-config.ts"; // 系统配置store
 import {
-  customerExportTaskNoticeEventName,
-  type CustomerExportTaskNoticeDetail
+  buildCustomerImportNotificationId,
+  customerImportTaskNoticeEventName,
+  type CustomerImportTaskNoticeDetail
 } from "@/utils/notice-websocket";
 
 interface Props {
@@ -667,7 +797,9 @@ interface Props {
   presetSearchForm?: Partial<CustomerListSearchForm>;
   showCreateAction?: boolean;
   showExportAction?: boolean;
+  showImportAction?: boolean;
   createPermission?: string[];
+  importPermission?: string[];
   editPermission?: string[];
   deletePermission?: string[];
   detailPermission?: string[];
@@ -678,10 +810,12 @@ const props = withDefaults(defineProps<Props>(), {
   presetSearchForm: () => ({}),
   showCreateAction: true,
   showExportAction: false,
+  showImportAction: false,
   createPermission: () => ["plugins:syscustomersyscustomer:add"],
+  importPermission: () => ["plugins:syscustomersyscustomer:add"],
   editPermission: () => ["plugins:syscustomersyscustomer:edit"],
   detailPermission: () => ["plugins:syscustomersyscustomer:detail"],
-  deletePermission: () => ["plugins:syscustomersyscustomer:delete"],
+  deletePermission: () => ["plugins:syscustomersyscustomer:delete"]
 });
 
 const userInfo = getLocalStorage<any>(UserInfoKey);
@@ -732,7 +866,7 @@ const singlePieceTypeOption = ref(dictFilter("singlePieceTypeArr"));
 const sexOption = ref(dictFilter("gender"));
 
 // 渠道来源选项
-const channelOption = ref<{ value: number; name: string }[]>([]);
+const channelCompanyOptions = ref<{ value: number; name: string }[]>([]);
 
 const {
   dataList,
@@ -750,24 +884,63 @@ const {
 } = useSysCustomerPluginHook();
 
 const modalVisible = ref(false);
+const importModalVisible = ref(false);
 const formRef = ref();
+const importFileInputRef = ref<HTMLInputElement>();
 const exporting = ref(false);
+// 导入流程会有两种“正在处理”状态：
+// 1. importing: 前端正在把文件和参数提交给后端
+// 2. cancelingImport: 前端正在提交“终止导入”指令
+const importing = ref(false);
+const cancelingImport = ref(false);
+// 如果上一次导入中断，这里会保存建议继续导入的起始行号。
+const suggestedImportResumeRow = ref(0);
+// 导入弹窗表单：渠道、起始行、备注、文件都集中放这里，便于一次性校验和提交。
+const importForm = reactive<{
+  channelCompanyId?: number;
+  startRow: number;
+  remark: string;
+  file: File | null;
+}>({
+  channelCompanyId: undefined,
+  startRow: 2,
+  remark: "",
+  file: null
+});
 
-type ExportTaskStatus = "queued" | "running" | "success" | "failed" | "canceled";
+type ImportTaskStatus = "pending" | "running" | "canceling" | "canceled" | "success" | "partial" | "failed";
 
-type ExportTaskData = {
+// 这是前端统一使用的导入任务结构。
+// 不管数据来自“刚提交导入后的返回结果”，还是“轮询/通知推送”，最后都会转成这个格式。
+type ImportTaskData = {
   id: number;
-  status: ExportTaskStatus | string;
-  total: number;
-  processed?: number;
-  progress?: number;
-  affixId?: number;
-  fileName?: string;
+  status: ImportTaskStatus | string;
+  startRow: number;
+  resumeRow?: number;
+  interrupted: boolean;
+  totalCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  duplicateCount: number;
+  progress: number;
   errorMessage?: string;
+  fileName?: string;
+  remark?: string;
 };
 
-const asyncExportTask = ref<ExportTaskData | null>(null);
-const activeExportTask = computed(() => asyncExportTask.value);
+const activeImportTask = ref<ImportTaskData | null>(null);
+// 用户手动点掉“继续导入提醒”后，本次页面停留期间不再反复提示。
+const importResumeReminderDismissed = ref(false);
+
+const importTemplateHeaders = ["客户姓名", "手机号", "年龄", "星级", "需求金额", "客户备注", "性别"];
+
+const importGuideItems = [
+  "模板首行必须保留表头，字段名需要与标准模板完全一致。",
+  "手机号必须是 11 位大陆手机号，性别支持“男 / 女 / 空值”。",
+  "默认从第 2 行开始导入；如果任务中断，可按建议行号继续上传同一模板。",
+  "当前模板暂不传资质数据"
+];
 
 // 客户有效性标签管理相关
 const {
@@ -819,6 +992,138 @@ const selectedCustomerData = ref<SysCustomerData>();
 
 // 搜索表单会在默认模型的基础上叠加 presetSearchForm，保证不同页面共用同一份母版时仍能保留各自语义。
 const searchForm = reactive(buildPageSearchForm());
+const currentImportSceneName = computed(() => resolveExportSceneName(props.scene));
+// 后端状态字段可能为空或混入其他类型，这里统一转成字符串再判断，避免重复写 String(...)。
+const normalizeImportTaskStatus = (status?: ImportTaskStatus | string) => String(status || "");
+const buildImportCountSummary = (successCount: number, failedCount: number, duplicateCount: number) => {
+  const parts = [`导入成功 ${successCount} 条`, `导入失败 ${failedCount} 条`];
+  if (duplicateCount > 0) {
+    parts.push(`重复数据：${duplicateCount}`);
+  }
+  return `${parts.join("，")}。`;
+};
+const isImportTaskResumable = (task?: ImportTaskData | null) => {
+  if (!task || !task.resumeRow) {
+    return false;
+  }
+
+  const status = normalizeImportTaskStatus(task.status);
+  return status === "failed" || (status === "partial" && task.interrupted);
+};
+const isImportTaskCancelable = (task?: ImportTaskData | null) =>
+  ["pending", "running"].includes(normalizeImportTaskStatus(task?.status));
+const isImportTaskProcessing = (task?: ImportTaskData | null) =>
+  ["pending", "running", "canceling"].includes(normalizeImportTaskStatus(task?.status));
+// 所有进度条显示都经过这里兜底，保证最终一定是 0 到 100 之间的整数。
+const clampImportProgress = (value: unknown, fallback: number = 0) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return fallback;
+  }
+  return Math.min(100, Math.max(0, Math.round(numericValue)));
+};
+const shouldShowImportResumeReminder = computed(() => {
+  const task = activeImportTask.value;
+  if (!task || importResumeReminderDismissed.value) {
+    return false;
+  }
+  return isImportTaskResumable(task);
+});
+const importResumeBannerText = computed(() => {
+  const task = activeImportTask.value;
+  if (!task?.resumeRow) {
+    return "";
+  }
+  return `上次导入在第 ${task.resumeRow} 行附近中断，建议从第 ${task.resumeRow} 行继续上传同一模板。`;
+});
+const importResumeHint = computed(() =>
+  shouldShowImportResumeReminder.value && suggestedImportResumeRow.value > 1
+    ? `检测到上次任务中断，建议从第 ${suggestedImportResumeRow.value} 行继续导入。`
+    : "默认从第 2 行开始，首行表头不会被导入。"
+);
+const importActionInProgress = computed(
+  () => importing.value || cancelingImport.value || isImportTaskProcessing(activeImportTask.value)
+);
+const importActionButtonProgress = computed(() => {
+  if (importing.value && !isImportTaskProcessing(activeImportTask.value)) {
+    return 12;
+  }
+
+  const task = activeImportTask.value;
+  if (!task || !isImportTaskProcessing(task)) {
+    return 0;
+  }
+
+  if (normalizeImportTaskStatus(task.status) === "pending") {
+    return Math.max(8, clampImportProgress(task.progress));
+  }
+
+  return Math.max(12, clampImportProgress(task.progress));
+});
+const importActionButtonLabel = computed(() => {
+  if (importing.value && !isImportTaskProcessing(activeImportTask.value)) {
+    return "提交中...";
+  }
+
+  const task = activeImportTask.value;
+  if (!task) {
+    return "导入数据";
+  }
+
+  switch (normalizeImportTaskStatus(task.status)) {
+    case "pending":
+      return "导入排队中";
+    case "running":
+      return `导入中 ${clampImportProgress(task.progress)}%`;
+    case "canceling":
+      return "终止中...";
+    default:
+      return "导入数据";
+  }
+});
+const importActionButtonStyle = computed(() =>
+  importActionInProgress.value
+    ? {
+        "--customer-import-progress": `${importActionButtonProgress.value}%`
+      }
+    : {}
+);
+
+// 后端有时会直接返回完整中文总结，有时只返回错误信息。
+// 这里统一做一次拼装，确保通知、横幅、任务结果提示使用同一套文案规则。
+const buildImportTaskResultSummary = (task: ImportTaskData) => {
+  const successCount = Number(task.successCount || 0);
+  const failedCount = Number(task.failedCount || 0);
+  const duplicateCount = Number(task.duplicateCount || 0);
+  const countSummary =
+    successCount > 0 || failedCount > 0 || duplicateCount > 0
+      ? buildImportCountSummary(successCount, failedCount, duplicateCount)
+      : "";
+  const detail = String(task.errorMessage || "").trim();
+
+  if (detail.includes("导入成功") && detail.includes("导入失败")) {
+    return detail;
+  }
+  if (countSummary && detail) {
+    return `${countSummary}${detail}`;
+  }
+  if (detail) {
+    return detail;
+  }
+  if (countSummary) {
+    return countSummary;
+  }
+  if (isImportTaskResumable(task) && task.resumeRow) {
+    return `上次导入已中断，建议从第 ${task.resumeRow} 行继续导入。`;
+  }
+  if (String(task.status) === "canceled") {
+    return "导入任务已手动终止，本批次已导入客户已按 batch_id 彻底删除。";
+  }
+  if (String(task.status) === "failed") {
+    return "导入任务执行失败，请稍后重试。";
+  }
+  return "";
+};
 
 const {
   manageValidModalVisible,
@@ -989,94 +1294,425 @@ const buildCustomerExportDownloadName = (scene: CustomerListScene | undefined, t
   return `${resolveExportSceneName(scene)}_${formatExportDate(now)}_${formatExportTime(now)}_${buildFrontExportShortCode()}_${total}.csv`;
 };
 
-const handleCustomerExportTaskNotice = (rawEvent: Event) => {
-  const detail = (rawEvent as CustomEvent<CustomerExportTaskNoticeDetail>).detail;
-  if (!detail?.taskId) {
-    return;
+const getImportTaskTitle = (task: ImportTaskData) => {
+  switch (normalizeImportTaskStatus(task.status)) {
+    case "pending":
+      return "导入任务排队中";
+    case "running":
+      return "导入任务执行中";
+    case "canceling":
+      return "导入任务终止中";
+    case "canceled":
+      return "导入任务已终止";
+    case "partial":
+      return isImportTaskResumable(task) ? "导入任务已中断" : "导入任务部分完成";
+    case "failed":
+      return isImportTaskResumable(task) ? "导入任务已中断" : "导入任务执行失败";
+    case "success":
+      return "导入任务已完成";
+    default:
+      return "导入任务状态";
   }
-
-  const currentTask = asyncExportTask.value;
-  if (currentTask && currentTask.id !== detail.taskId) {
-    return;
-  }
-
-  const total = detail.total ?? currentTask?.total ?? 0;
-  const nextTask: ExportTaskData = {
-    id: detail.taskId,
-    status: detail.status,
-    total,
-    processed: currentTask?.processed ?? 0,
-    progress: currentTask?.progress ?? 0,
-    affixId: detail.affixId ?? currentTask?.affixId,
-    fileName: detail.fileName ?? currentTask?.fileName,
-    errorMessage: detail.errorMessage ?? currentTask?.errorMessage
-  };
-
-  if (detail.status === "success") {
-    nextTask.processed = total;
-    nextTask.progress = 100;
-  }
-
-  asyncExportTask.value = nextTask;
 };
 
-const activeExportTaskTitle = computed(() => {
-  const task = asyncExportTask.value;
-  if (!task) {
-    return "";
-  }
-
-  switch (task.status) {
-    case "queued":
-      return "导出任务排队中";
+const getImportTaskSummary = (task: ImportTaskData) => {
+  const duplicateSummary = Number(task.duplicateCount || 0) > 0 ? `，重复数据：${Number(task.duplicateCount || 0)}` : "";
+  switch (normalizeImportTaskStatus(task.status)) {
+    case "pending":
+      return `任务已进入队列，文件 ${task.fileName || "客户导入文件"} 正在等待处理。`;
     case "running":
-      return "导出任务执行中";
-    case "success":
-      return "导出任务已完成";
-    case "failed":
-      return "导出任务失败";
+      return `正在导入，已处理 ${task.processedCount || 0}/${task.totalCount || 0} 行，当前进度 ${clampImportProgress(task.progress)}%${duplicateSummary}。`;
+    case "canceling":
+      return "已提交终止指令，正在按 batch_id 彻底删除本批次已导入客户。";
     case "canceled":
-      return "导出任务已取消";
+      return buildImportTaskResultSummary(task);
+    case "partial":
+    case "failed":
+      return buildImportTaskResultSummary(task);
+    case "success":
+      return buildImportCountSummary(
+        Number(task.successCount || 0),
+        Number(task.failedCount || 0),
+        Number(task.duplicateCount || 0)
+      );
     default:
-      return "导出任务状态";
+      return "正在同步导入任务状态。";
   }
-});
+};
 
-const activeExportTaskAlertType = computed(() => {
-  const status = asyncExportTask.value?.status;
-  if (status === "success") {
-    return "success";
+const getImportNotificationProgressTone = (task: ImportTaskData) => {
+  switch (normalizeImportTaskStatus(task.status)) {
+    case "pending":
+      return "linear-gradient(90deg, #ffb65d 0%, #ff7d00 100%)";
+    case "canceling":
+    case "canceled":
+      return "linear-gradient(90deg, #ff7d00 0%, #ffb65d 100%)";
+    case "success":
+      return "linear-gradient(90deg, #00b42a 0%, #14c9c9 100%)";
+    case "partial":
+      return "linear-gradient(90deg, #ffb65d 0%, #ff7d00 100%)";
+    case "failed":
+      return "linear-gradient(90deg, #f53f3f 0%, #ff7d00 100%)";
+    default:
+      return "linear-gradient(90deg, #165dff 0%, #36bffa 100%)";
   }
-  if (status === "failed" || status === "canceled") {
-    return "error";
-  }
-  if (status === "queued") {
-    return "warning";
-  }
-  return "info";
-});
+};
 
-const activeExportTaskSummary = computed(() => {
-  const task = asyncExportTask.value;
+const dismissedImportProgressNotificationKeys = new Set<string>();
+const buildImportProgressNotificationDismissKey = (task: ImportTaskData) => `${task.id}:progress`;
+const isImportProgressNotificationDismissed = (task: ImportTaskData) =>
+  dismissedImportProgressNotificationKeys.has(buildImportProgressNotificationDismissKey(task));
+const markImportProgressNotificationDismissed = (task: ImportTaskData) => {
+  dismissedImportProgressNotificationKeys.add(buildImportProgressNotificationDismissKey(task));
+};
+const clearImportProgressNotificationDismissed = (task: ImportTaskData) => {
+  dismissedImportProgressNotificationKeys.delete(buildImportProgressNotificationDismissKey(task));
+};
+
+// 点击“终止导入”后，并不是立刻关任务，而是先通知后端切状态，
+// 后端会停止继续导入，并按 batch_id 把本批次已写入的客户彻底删除。
+const handleCancelImportTask = async (task?: ImportTaskData | null) => {
+  if (!task || !isImportTaskCancelable(task) || cancelingImport.value) {
+    return;
+  }
+
+  Modal.confirm({
+    title: "终止导入",
+    content: "终止后将按 batch_id 彻底删除当前批次已导入的客户数据。",
+    okText: "确认终止",
+    cancelText: "继续导入",
+    okButtonProps: {
+      status: "danger"
+    },
+    onOk: async () => {
+      cancelingImport.value = true;
+      try {
+        const response = await cancelSysCustomerImportBatch(task.id);
+        if (response.data) {
+          await applyImportTaskSnapshot(
+            {
+              id: response.data.id,
+              status: response.data.status,
+              startRow: Number(response.data.startRow || 2),
+              resumeRow: response.data.resumeRow,
+              interrupted: Boolean(response.data.interrupted),
+              totalCount: Number(response.data.totalCount || 0),
+              processedCount: Number(response.data.processedCount || 0),
+              successCount: Number(response.data.successCount || 0),
+              failedCount: Number(response.data.failedCount || 0),
+              duplicateCount: Number(response.data.duplicateCount || 0),
+              progress: Number(response.data.progress || 0),
+              errorMessage: response.data.errorMessage,
+              fileName: response.data.fileName,
+              remark: response.data.remark
+            },
+            { reloadList: ["canceled", "partial", "success"].includes(String(response.data.status)) }
+          );
+        }
+
+        if (response.data?.status === "canceling") {
+          Message.success("终止指令已提交");
+        } else if (response.data?.status === "canceled") {
+          Message.success("导入任务已终止");
+        } else {
+          Message.info("导入任务状态已更新");
+        }
+      } catch (error) {
+        console.error("终止导入任务失败:", error);
+      } finally {
+        cancelingImport.value = false;
+      }
+    }
+  });
+};
+const buildImportNotificationFooter = (task: ImportTaskData, handleAcknowledge: () => void) => () =>
+  h(
+    Space,
+    { size: "mini" },
+    {
+      default: () => [
+        isImportTaskCancelable(task)
+          ? h(
+              Button,
+              {
+                status: "danger",
+                size: "mini",
+                loading: cancelingImport.value,
+                onClick: () => void handleCancelImportTask(task)
+              },
+              {
+                default: () => "终止导入"
+              }
+            )
+          : null,
+        h(
+          Button,
+          {
+            type: "primary",
+            size: "mini",
+            onClick: handleAcknowledge
+          },
+          {
+            default: () => "我知道了"
+          }
+        )
+      ]
+    }
+  );
+
+const openImportProgressNotification = (task: ImportTaskData, options: { force?: boolean } = {}) => {
+  if (options.force) {
+    clearImportProgressNotificationDismissed(task);
+  } else if (isImportProgressNotificationDismissed(task)) {
+    return;
+  }
+
+  const notificationId = buildCustomerImportNotificationId(task.id);
+  const progressPercent = clampImportProgress(task.progress, normalizeImportTaskStatus(task.status) === "pending" ? 8 : 0);
+  const renderProgress = isImportTaskProcessing(task) || progressPercent > 0;
+  const summary = getImportTaskSummary(task);
+  let notificationRef: { close: () => void } | undefined;
+  const handleAcknowledge = () => {
+    markImportProgressNotificationDismissed(task);
+    notificationRef?.close();
+  };
+  const metaText =
+    Number(task.totalCount || 0) > 0
+      ? `已处理 ${Number(task.processedCount || 0)}/${Number(task.totalCount || 0)} 行`
+      : normalizeImportTaskStatus(task.status) === "pending"
+        ? "后台任务已接收，正在等待处理"
+        : normalizeImportTaskStatus(task.status) === "canceling"
+          ? "正在停止导入任务"
+          : "后台任务正在处理中";
+  const notificationConfig = {
+    id: notificationId,
+    title: getImportTaskTitle(task),
+    position: "bottomRight" as const,
+    duration: 0,
+    closable: true,
+    onClose: () => markImportProgressNotificationDismissed(task),
+    footer: buildImportNotificationFooter(task, handleAcknowledge),
+    content: () =>
+      h("div", { style: { display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" } }, [
+        h(
+          "div",
+          {
+            style: {
+              fontSize: "13px",
+              lineHeight: "1.6",
+              color: "#4e5969"
+            }
+          },
+          summary
+        ),
+        renderProgress
+          ? h("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+              h(
+                "div",
+                {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    fontSize: "12px",
+                    color: "#86909c"
+                  }
+                },
+                [h("span", metaText), h("span", `${progressPercent}%`)]
+              ),
+              h(
+                "div",
+                {
+                  style: {
+                    width: "100%",
+                    height: "6px",
+                    overflow: "hidden",
+                    background: "#f2f3f5",
+                    borderRadius: "999px"
+                  }
+                },
+                [
+                  h("div", {
+                    style: {
+                      width: `${progressPercent}%`,
+                      height: "100%",
+                      background: getImportNotificationProgressTone(task),
+                      borderRadius: "999px",
+                      transition: "width 0.24s ease"
+                    }
+                  })
+                ]
+              )
+            ])
+          : null
+      ])
+  };
+
+  if (normalizeImportTaskStatus(task.status) === "pending") {
+    notificationRef = Notification.warning(notificationConfig);
+    return;
+  }
+
+  notificationRef = Notification.info(notificationConfig);
+};
+
+watch(
+  activeImportTask,
+  (task, previousTask) => {
+    const previousTaskId = Number(previousTask?.id || 0);
+    const currentTaskId = Number(task?.id || 0);
+    const previousTaskWasProcessing = isImportTaskProcessing(previousTask);
+
+    if (previousTaskWasProcessing && previousTaskId > 0 && previousTaskId !== currentTaskId) {
+      Notification.remove(buildCustomerImportNotificationId(previousTaskId));
+    }
+
+    if (!task || !currentTaskId) {
+      return;
+    }
+
+    if (isImportTaskProcessing(task)) {
+      openImportProgressNotification(task);
+    } else if (previousTaskWasProcessing && previousTaskId === currentTaskId) {
+      openImportProgressNotification(task, { force: true });
+    }
+  },
+  { deep: true }
+);
+
+// 任何来源的任务状态更新，最终都走这个方法落到页面状态里。
+// 这样做可以保证“首次提交 / 消息通知 / 手动刷新任务状态”三条路径的行为一致。
+const applyImportTaskSnapshot = async (task: ImportTaskData | null, options: { reloadList?: boolean } = {}) => {
+  activeImportTask.value = task;
   if (!task) {
-    return "";
+    suggestedImportResumeRow.value = 0;
+    importResumeReminderDismissed.value = false;
+    return;
   }
 
-  switch (task.status) {
-    case "queued":
-      return `任务已进入队列，预计导出 ${task.total || 0} 条数据，请稍候。`;
-    case "running":
-      return `正在导出，已处理 ${task.processed || 0}/${task.total || 0} 条，当前进度 ${task.progress || 0}%。`;
-    case "success":
-      return `导出文件已生成${task.fileName ? `：${task.fileName}` : ""}。`;
-    case "failed":
-      return task.errorMessage || "导出任务执行失败，请稍后重试。";
-    case "canceled":
-      return "导出任务已取消。";
-    default:
-      return "正在同步导出任务状态。";
+  if (task.resumeRow && ["partial", "failed"].includes(String(task.status))) {
+    suggestedImportResumeRow.value = task.resumeRow;
+    importForm.startRow = task.resumeRow;
+    importResumeReminderDismissed.value = false;
+  } else {
+    suggestedImportResumeRow.value = 0;
   }
-});
+
+  if (options.reloadList && ["success", "partial", "canceled"].includes(String(task.status))) {
+    await loadData(1);
+  }
+};
+
+// 后端通过自定义事件推送导入任务进度时，会先把原始 detail 整理成前端统一结构，再刷新页面。
+const handleCustomerImportTaskNotice = async (rawEvent: Event) => {
+  const detail = (rawEvent as CustomEvent<CustomerImportTaskNoticeDetail>).detail;
+  if (!detail?.batchId) {
+    return;
+  }
+
+  const nextTask: ImportTaskData = {
+    id: detail.batchId,
+    status: detail.status,
+    startRow: Number(detail.startRow || 2),
+    resumeRow: detail.resumeRow,
+    interrupted: Boolean(detail.interrupted),
+    totalCount: Number(detail.totalCount || 0),
+    processedCount: Number(detail.processedCount || 0),
+    successCount: Number(detail.successCount || 0),
+    failedCount: Number(detail.failedCount || 0),
+    duplicateCount: Number(detail.duplicateCount || 0),
+    progress: Number(detail.progress || 0),
+    errorMessage: detail.errorMessage,
+    fileName: detail.fileName,
+    remark: detail.remark
+  };
+
+  await applyImportTaskSnapshot(nextTask, { reloadList: true });
+};
+
+// 页面初始化或用户重新进入列表页时，主动拿一次“最近导入任务”，
+// 这样即使页面刷新了，也能继续看到上一次任务的进度和补传提示。
+const loadLatestImportTask = async () => {
+  try {
+    const response = await getLatestSysCustomerImportBatch();
+    if (!response.data) {
+      activeImportTask.value = null;
+      suggestedImportResumeRow.value = 0;
+      importResumeReminderDismissed.value = false;
+      return;
+    }
+
+    const latestTask: ImportTaskData = {
+      id: response.data.id,
+      status: response.data.status,
+      startRow: response.data.startRow,
+      resumeRow: response.data.resumeRow,
+      interrupted: Boolean(response.data.interrupted),
+      totalCount: Number(response.data.totalCount || 0),
+      processedCount: Number(response.data.processedCount || 0),
+      successCount: Number(response.data.successCount || 0),
+      failedCount: Number(response.data.failedCount || 0),
+      duplicateCount: Number(response.data.duplicateCount || 0),
+      progress: Number(response.data.progress || 0),
+      errorMessage: response.data.errorMessage,
+      fileName: response.data.fileName,
+      remark: response.data.remark
+    };
+
+    await applyImportTaskSnapshot(latestTask);
+  } catch (error) {
+    console.error("获取最新导入任务失败:", error);
+  }
+};
+
+const openExportDialog = (options: { title: string; content: string; type?: "info" | "success" | "error" }) => {
+  const modalConfig = {
+    title: options.title,
+    content: options.content,
+    okText: "确定",
+    hideCancel: true,
+    closable: true
+  };
+
+  if (options.type === "error") {
+    Modal.error(modalConfig);
+    return;
+  }
+
+  if (options.type === "success") {
+    Modal.success(modalConfig);
+    return;
+  }
+
+  Modal.info(modalConfig);
+};
+
+const resolveExportErrorMessage = (error: unknown) => {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const requestError = error as {
+      message?: string;
+      response?: {
+        data?: {
+          message?: string;
+        };
+      };
+    };
+    const serverMessage = requestError.response?.data?.message;
+    if (serverMessage) {
+      return serverMessage;
+    }
+    if (requestError.message) {
+      return requestError.message;
+    }
+  }
+
+  return "导出失败，请稍后重试。";
+};
 
 const handleExport = async () => {
   exporting.value = true;
@@ -1085,22 +1721,13 @@ const handleExport = async () => {
     const submitResult = await submitSysCustomerExport(params);
     if (submitResult.data.mode === "async") {
       const exportMessage = submitResult.data.message || "数据量较大，已转为异步导出，完成后会弹出下载提醒。";
-      const taskId = Number(submitResult.data.taskId || 0);
-      asyncExportTask.value = taskId > 0 ? {
-        id: taskId,
-        status: submitResult.data.status || "queued",
-        total: Number(submitResult.data.total || 0),
-        processed: 0,
-        progress: 0
-      } : null;
-      if (submitResult.data.existing) {
-        Message.info(exportMessage);
-      } else {
-        Message.success(exportMessage);
-      }
+      openExportDialog({
+        title: submitResult.data.existing ? "导出任务提示" : "导出任务已提交",
+        content: exportMessage,
+        type: submitResult.data.existing ? "info" : "success"
+      });
       return;
     }
-    asyncExportTask.value = null;
     const response = await exportSysCustomerList(params);
     const blob = new Blob([response], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
@@ -1109,11 +1736,213 @@ const handleExport = async () => {
     link.download = buildCustomerExportDownloadName(props.scene, Number(submitResult.data.total || 0));
     link.click();
     window.URL.revokeObjectURL(url);
-    Message.success("导出成功");
+    openExportDialog({
+      title: "导出完成",
+      content: "导出文件已开始下载。",
+      type: "success"
+    });
   } catch (error) {
     console.error("导出客户失败:", error);
+    openExportDialog({
+      title: "导出失败",
+      content: resolveExportErrorMessage(error),
+      type: "error"
+    });
   } finally {
     exporting.value = false;
+  }
+};
+
+// 清空文件选择时，同时把原生 input 的值重置。
+// 否则用户连续选同一个文件，change 事件可能不会再次触发。
+const clearImportSelection = () => {
+  importForm.file = null;
+  if (importFileInputRef.value) {
+    importFileInputRef.value.value = "";
+  }
+};
+
+const handleDismissImportResumeReminder = () => {
+  importResumeReminderDismissed.value = true;
+};
+
+// 打开导入弹窗前，先判断后台是否还有任务在跑。
+// 如果还在跑，不允许再开新导入，而是直接把进度通知重新弹出来。
+const openImportModal = () => {
+  if (isImportTaskProcessing(activeImportTask.value)) {
+    const task = activeImportTask.value;
+    if (task?.id) {
+      openImportProgressNotification(task, { force: true });
+    }
+    return;
+  }
+
+  importForm.channelCompanyId = searchForm.channelId ? Number(searchForm.channelId) : undefined;
+  importForm.startRow = suggestedImportResumeRow.value > 1 ? suggestedImportResumeRow.value : 2;
+  importForm.remark = "";
+  clearImportSelection();
+  importModalVisible.value = true;
+};
+
+// 取消导入弹窗时，只清空本次选择，不影响后台已经存在的导入任务。
+const handleImportCancel = () => {
+  importModalVisible.value = false;
+  importForm.remark = "";
+  clearImportSelection();
+};
+
+const triggerImportFileSelect = () => {
+  importFileInputRef.value?.click();
+};
+
+// 这里只做最基础的文件校验：必须选文件，且后缀必须是 .xlsx。
+// 更细的模板内容校验交给后端统一处理，避免前后规则不一致。
+const handleImportFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement | null;
+  const file = target?.files?.[0] ?? null;
+  if (!file) {
+    importForm.file = null;
+    return;
+  }
+
+  if (!/\.xlsx$/i.test(file.name)) {
+    Message.error("当前仅支持上传 .xlsx 文件");
+    clearImportSelection();
+    return;
+  }
+
+  importForm.file = file;
+};
+
+const buildCustomerImportDemoName = (scene?: CustomerListScene) => {
+  return `${resolveExportSceneName(scene)}_客户导入模板.xlsx`;
+};
+
+// 下载模板时，前端直接生成一个 Excel：
+// 1. “填写说明”工作表告诉用户怎么填
+// 2. “客户导入模板”工作表给出标准表头和示例数据
+const handleDownloadImportDemo = async () => {
+  const XLSX = await import("xlsx");
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    importTemplateHeaders,
+    ["张三", "13800138000", 25, 3, 10, "有房有车，近 3 个月有资金需求", "男"]
+  ]);
+  worksheet["!cols"] = [{ wch: 16 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 36 }, { wch: 10 }];
+
+  const guideSheet = XLSX.utils.aoa_to_sheet([
+    ["说明项", "内容"],
+    ["导入场景", currentImportSceneName.value],
+    ["起始导入行", importResumeHint.value],
+    ...importGuideItems.map((item, index) => [`说明 ${index + 1}`, item])
+  ]);
+  guideSheet["!cols"] = [{ wch: 14 }, { wch: 56 }];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, guideSheet, "填写说明");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "客户导入模板");
+  XLSX.writeFile(workbook, buildCustomerImportDemoName(props.scene));
+};
+
+// 确认导入的完整流程：
+// 1. 先校验必填项和文件
+// 2. 再把表单转成 FormData 提交给后端
+// 3. 提交成功后，立刻把本地任务状态切到“排队/处理中”，让用户马上看到反馈
+const handleImportConfirm = async () => {
+  if (isImportTaskProcessing(activeImportTask.value)) {
+    if (activeImportTask.value?.id) {
+      openImportProgressNotification(activeImportTask.value, { force: true });
+    }
+    return false;
+  }
+
+  if (!importForm.channelCompanyId) {
+    Message.error("请选择导入渠道来源");
+    return false;
+  }
+  if (!importForm.startRow || Number(importForm.startRow) < 2) {
+    Message.error("导入起始行不能小于 2");
+    return false;
+  }
+  if (!importForm.file) {
+    Message.error("请先选择导入文件");
+    return false;
+  }
+
+  importing.value = true;
+  try {
+    const trimmedImportRemark = importForm.remark.trim();
+    const formData = new FormData();
+    // scene 决定当前是“全部客户 / 我的客户 / 公共池”等哪个入口发起的导入。
+    formData.append("scene", String(props.scene || "all"));
+    formData.append("channelCompanyId", String(importForm.channelCompanyId));
+    formData.append("startRow", String(importForm.startRow));
+    if (trimmedImportRemark) {
+      formData.append("remark", trimmedImportRemark);
+    }
+    formData.append("file", importForm.file);
+
+    const result = await importSysCustomerFile(formData);
+    const batchId = Number(result.data.batchId || 0);
+    if (batchId > 0) {
+      // 后端已经创建了导入批次，前端先用最基础的数据把任务挂到页面上，
+      // 后续进度、成功数、失败数再通过查询或通知补齐。
+      await applyImportTaskSnapshot({
+        id: batchId,
+        status: result.data.status || "pending",
+        startRow: Number(importForm.startRow || 2),
+        resumeRow: undefined,
+        interrupted: false,
+        totalCount: 0,
+        processedCount: 0,
+        successCount: 0,
+        failedCount: 0,
+        duplicateCount: 0,
+        progress: 0,
+        fileName: importForm.file.name,
+        remark: trimmedImportRemark || undefined
+      });
+    } else if (result.data.existing) {
+      // 如果后端返回“已有任务在执行”，说明这次没有新建批次，直接把已有任务状态重新加载出来。
+      await loadLatestImportTask();
+    }
+
+    if (result.data.existing && !batchId) {
+      let notificationRef: { close: () => void } | undefined;
+      const handleAcknowledge = () => {
+        notificationRef?.close();
+      };
+      notificationRef = Notification.info({
+        title: "导入任务进行中",
+        content: result.data.message || "当前已有导入任务正在处理中。",
+        position: "bottomRight",
+        duration: 0,
+        closable: true,
+        footer: buildImportNotificationFooter(
+          activeImportTask.value || {
+            id: 0,
+            status: "success",
+            startRow: 2,
+            interrupted: false,
+            totalCount: 0,
+            processedCount: 0,
+            successCount: 0,
+            failedCount: 0,
+            duplicateCount: 0,
+            progress: 0
+          },
+          handleAcknowledge
+        )
+      });
+    }
+
+    importModalVisible.value = false;
+    importForm.remark = "";
+    clearImportSelection();
+    return true;
+  } catch (error) {
+    console.error("导入客户失败:", error);
+    return false;
+  } finally {
+    importing.value = false;
   }
 };
 
@@ -1518,7 +2347,7 @@ const handleToggleLock = async (record: SysCustomerData) => {
   }
 };
 
-// 查询渠道数据
+// 加载渠道来源数据。客户列表当前沿用历史口径，channelId 实际保存的是渠道来源 ID。
 const fetchChannelData = async () => {
   try {
     const params: SysChannelCompanyListParams = {
@@ -1529,22 +2358,23 @@ const fetchChannelData = async () => {
     const response = await getSysChannelCompanyList(params);
 
     if (response.data && Array.isArray(response.data.list)) {
-      // 将渠道数据转换为选项格式，显示hiddenCode字段
-      channelOption.value = response.data.list.map((item: SysChannelCompanyData) => ({
+      // 渠道来源列表展示 hiddenName，避免把底层 channel_id 暴露给业务同学。
+      channelCompanyOptions.value = response.data.list.map((item: SysChannelCompanyData) => ({
         value: item.id,
         name: item.hiddenName
       }));
     }
   } catch (error) {
     console.error("获取渠道数据失败:", error);
-    channelOption.value = [];
+    channelCompanyOptions.value = [];
   }
 };
 
 onMounted(async () => {
-  window.addEventListener(customerExportTaskNoticeEventName, handleCustomerExportTaskNotice as EventListener);
+  window.addEventListener(customerImportTaskNoticeEventName, handleCustomerImportTaskNotice as EventListener);
   // 初始化加载数据
   await loadData();
+  await loadLatestImportTask();
   // 加载渠道数据
   await fetchChannelData();
   // 加载部门树数据
@@ -1556,13 +2386,256 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener(customerExportTaskNoticeEventName, handleCustomerExportTaskNotice as EventListener);
+  window.removeEventListener(customerImportTaskNoticeEventName, handleCustomerImportTaskNotice as EventListener);
 });
 </script>
 
 <style scoped lang="scss">
 .customer-export-task-banner {
   margin-top: 12px;
+}
+
+.customer-import-action-button {
+  position: relative;
+  overflow: hidden;
+  min-width: 112px;
+}
+
+.customer-import-action-button--progress {
+  color: #fff !important;
+  border-color: #2563eb !important;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.customer-import-action-button--progress::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--customer-import-progress, 0%);
+  content: "";
+  background: linear-gradient(90deg, #1e3a8a 0%, #0f766e 100%);
+  transition: width 0.24s ease;
+}
+
+.customer-import-action-button--progress[disabled] {
+  opacity: 1;
+}
+
+.customer-import-action-button__content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.customer-import-action-button__icon {
+  font-size: 14px;
+}
+
+.customer-import-action-button__icon--spin {
+  animation: customer-import-action-spin 1s linear infinite;
+}
+
+@keyframes customer-import-action-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.customer-import-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.customer-import-toolbar {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f7f8fa 0%, #fbfcfd 100%);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #e5e6eb;
+}
+
+.customer-import-toolbar-tip {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #86909c;
+}
+
+.customer-import-summary {
+  margin-bottom: 0;
+}
+
+.customer-import-form {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px #e5e6eb;
+}
+
+.customer-import-input {
+  display: none;
+}
+
+.customer-import-field {
+  width: 100%;
+}
+
+.customer-import-field--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.customer-import-help-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #4e5969;
+}
+
+.customer-import-inline-context {
+  display: inline-block;
+  margin-left: 8px;
+  color: #86909c;
+}
+
+.customer-import-file-card {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #fff8e8 0%, #fffdf7 100%);
+  border: 1px dashed #ffb65d;
+  border-radius: 12px;
+  transition:
+    background 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s ease;
+  box-shadow: inset 0 0 0 1px rgba(255, 125, 0, 0.08);
+}
+
+.customer-import-file-card--idle {
+  background: linear-gradient(135deg, #fff8e8 0%, #fffdf7 100%);
+  border-color: #ffb65d;
+  box-shadow: inset 0 0 0 1px rgba(255, 125, 0, 0.08);
+}
+
+.customer-import-file-card--ready {
+  background: linear-gradient(135deg, #e8ffef 0%, #f3fffb 55%, #eef8ff 100%);
+  border-color: #55c68a;
+  box-shadow: inset 0 0 0 1px rgba(0, 180, 42, 0.12);
+}
+
+.customer-import-file-card-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.customer-import-file-card-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2129;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-import-file-card-desc {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #4e5969;
+}
+
+.customer-import-file-card--idle .customer-import-file-card-title {
+  color: #8d4f12;
+}
+
+.customer-import-file-card--idle .customer-import-file-card-desc {
+  color: #ad6800;
+}
+
+.customer-import-file-card--ready .customer-import-file-card-title {
+  color: #0f6b46;
+}
+
+.customer-import-file-card--ready .customer-import-file-card-desc {
+  color: #0f766e;
+}
+
+.customer-import-field-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.customer-import-field-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f3d91;
+  background: rgba(22, 93, 255, 0.08);
+  border-radius: 999px;
+}
+
+.customer-import-panel :deep(.arco-form-item-label-col > label) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4e5969;
+}
+
+.customer-import-panel :deep(.arco-form-item-content-flex) {
+  align-items: stretch;
+}
+
+.customer-import-panel :deep(.arco-select-view),
+.customer-import-panel :deep(.arco-input-number),
+.customer-import-panel :deep(.arco-textarea-wrapper) {
+  min-height: 40px;
+  border-color: #d9dee8;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.customer-import-panel :deep(.arco-select-view:hover),
+.customer-import-panel :deep(.arco-input-number:hover),
+.customer-import-panel :deep(.arco-textarea-wrapper:hover) {
+  border-color: rgba(22, 93, 255, 0.4);
+}
+
+.customer-import-panel :deep(.arco-select-view.arco-select-view-focus),
+.customer-import-panel :deep(.arco-input-number:focus-within),
+.customer-import-panel :deep(.arco-textarea-wrapper:focus-within) {
+  border-color: #165dff;
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
+}
+
+.customer-import-panel :deep(.arco-alert) {
+  border-radius: 12px;
 }
 
 .customer-editor {
@@ -1821,6 +2894,27 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
+  .customer-import-toolbar,
+  .customer-import-form {
+    padding: 14px;
+  }
+
+  .customer-import-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .customer-import-inline-context {
+    display: block;
+    margin-top: 4px;
+    margin-left: 0;
+  }
+
+  .customer-import-file-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .customer-editor {
     max-width: none;
     gap: 14px;

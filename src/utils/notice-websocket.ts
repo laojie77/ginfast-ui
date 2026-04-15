@@ -1,4 +1,4 @@
-import { Button, Message, Notification, Space } from "@arco-design/web-vue";
+import { Button, Message, Modal, Notification, Space } from "@arco-design/web-vue";
 import { getBaseUrl } from "@/api/utils";
 import { downloadAffixAPI } from "@/api/file";
 import { getAccessToken, hasRefreshToken } from "@/utils/auth";
@@ -27,6 +27,9 @@ const exportNotificationDedupWindow = 15000;
 const exportNotificationShownAt = new Map<string, number>();
 
 export const customerExportTaskNoticeEventName = "customer-export-task-notice";
+export const customerImportTaskNoticeEventName = "customer-import-task-notice";
+
+export const buildCustomerImportNotificationId = (batchId: number) => `customer-import-task:${batchId}`;
 
 export interface CustomerExportTaskNoticeDetail {
   taskId: number;
@@ -37,6 +40,53 @@ export interface CustomerExportTaskNoticeDetail {
   errorMessage?: string;
   timestamp?: number;
 }
+
+export interface CustomerImportTaskNoticeDetail {
+  batchId: number;
+  status: "pending" | "running" | "canceling" | "canceled" | "success" | "partial" | "failed";
+  startRow: number;
+  resumeRow?: number;
+  interrupted: boolean;
+  totalCount?: number;
+  processedCount?: number;
+  successCount?: number;
+  failedCount?: number;
+  duplicateCount?: number;
+  progress?: number;
+  fileName?: string;
+  remark?: string;
+  errorMessage?: string;
+  timestamp?: number;
+}
+
+const buildImportCountSummary = (successCount: number, failedCount: number, duplicateCount: number) => {
+  const parts = [`导入成功 ${successCount} 条`, `导入失败 ${failedCount} 条`];
+  if (duplicateCount > 0) {
+    parts.push(`重复数据：${duplicateCount}`);
+  }
+  return `${parts.join("，")}。`;
+};
+
+const buildAcknowledgeNotificationFooter = (handleAcknowledge: () => void) => () =>
+  h(
+    Space,
+    { size: "mini" },
+    {
+      default: () => [
+        h(
+          Button,
+          {
+            type: "primary",
+            size: "mini",
+            onClick: handleAcknowledge
+          },
+          {
+            default: () => "我知道了"
+          }
+        )
+      ]
+    }
+  );
 
 const buildExportNotificationDedupKey = (event: NoticeBusinessEvent, fallbackPrefix: string) => {
   const taskId = Number(event.extra?.taskId || 0);
@@ -56,13 +106,13 @@ const buildExportNotificationDedupKey = (event: NoticeBusinessEvent, fallbackPre
 const canOpenExportNotification = (key: string) => {
   const now = Date.now();
   for (const [existingKey, shownAt] of exportNotificationShownAt.entries()) {
-    if (now-shownAt > exportNotificationDedupWindow) {
+    if (now - shownAt > exportNotificationDedupWindow) {
       exportNotificationShownAt.delete(existingKey);
     }
   }
 
   const lastShownAt = exportNotificationShownAt.get(key);
-  if (lastShownAt && now-lastShownAt < exportNotificationDedupWindow) {
+  if (lastShownAt && now - lastShownAt < exportNotificationDedupWindow) {
     return false;
   }
 
@@ -70,10 +120,7 @@ const canOpenExportNotification = (key: string) => {
   return true;
 };
 
-const emitCustomerExportTaskNotice = (
-  event: NoticeBusinessEvent,
-  status: CustomerExportTaskNoticeDetail["status"]
-) => {
+const emitCustomerExportTaskNotice = (event: NoticeBusinessEvent, status: CustomerExportTaskNoticeDetail["status"]) => {
   if (typeof window === "undefined") {
     return;
   }
@@ -98,6 +145,39 @@ const emitCustomerExportTaskNotice = (
   );
 };
 
+const emitCustomerImportTaskNotice = (event: NoticeBusinessEvent) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const batchId = Number(event.extra?.batchId || 0);
+  if (!Number.isFinite(batchId) || batchId <= 0) {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent<CustomerImportTaskNoticeDetail>(customerImportTaskNoticeEventName, {
+      detail: {
+        batchId,
+        status: String(event.extra?.status || "pending") as CustomerImportTaskNoticeDetail["status"],
+        startRow: Number(event.extra?.startRow || 2) || 2,
+        resumeRow: Number(event.extra?.resumeRow || 0) || undefined,
+        interrupted: Boolean(event.extra?.interrupted),
+        totalCount: Number(event.extra?.totalCount || 0) || undefined,
+        processedCount: Number(event.extra?.processedCount || 0) || undefined,
+        successCount: Number(event.extra?.successCount || 0) || undefined,
+        failedCount: Number(event.extra?.failedCount || 0) || undefined,
+        duplicateCount: Number(event.extra?.duplicateCount || 0) || undefined,
+        progress: Number(event.extra?.progress || 0) || undefined,
+        fileName: String(event.extra?.fileName || "").trim() || undefined,
+        remark: String(event.extra?.remark || "").trim() || undefined,
+        errorMessage: String(event.extra?.errorMessage || event.content || "").trim() || undefined,
+        timestamp: event.timestamp
+      }
+    })
+  );
+};
+
 const resolveDownloadURL = (url: string) => {
   if (!url) {
     return "";
@@ -106,6 +186,16 @@ const resolveDownloadURL = (url: string) => {
   const baseUrl = getBaseUrl();
   const base = baseUrl || window.location.origin;
   return new URL(url, base).toString();
+};
+
+const buildExportReadyNotificationTitle = (event: NoticeBusinessEvent) => {
+  const baseTitle = String(event.title || "导出完成").trim() || "导出完成";
+  const total = Number(event.extra?.total || 0);
+  if (!Number.isFinite(total) || total <= 0) {
+    return baseTitle;
+  }
+
+  return `${baseTitle}：${total}条`;
 };
 
 const downloadExportAffix = async (event: NoticeBusinessEvent) => {
@@ -154,6 +244,8 @@ export const openExportReadyNotification = (event: NoticeBusinessEvent) => {
     notificationRef?.close();
   };
 
+  event.title = buildExportReadyNotificationTitle(event);
+
   notificationRef = Notification.success({
     title: event.title || "导出完成",
     content: fileName || "导出文件已生成",
@@ -199,13 +291,56 @@ export const openExportFailedNotification = (event: NoticeBusinessEvent) => {
     return;
   }
 
-  Notification.error({
+  Modal.error({
     title: event.title || "导出失败",
     content: event.content || "导出任务执行失败，请稍后重试。",
-    position: "bottomRight",
-    duration: 8000,
+    okText: "确定",
+    hideCancel: true,
     closable: true
   });
+};
+
+export const openImportResultNotification = (event: NoticeBusinessEvent) => {
+  const batchId = Number(event.extra?.batchId || 0);
+  const dedupKey = batchId > 0 ? `import_result:batch:${batchId}` : `import_result:title:${String(event.title || "").trim()}`;
+  if (!canOpenExportNotification(dedupKey)) {
+    return;
+  }
+
+  const status = String(event.extra?.status || "");
+  const successCount = Number(event.extra?.successCount || 0);
+  const failedCount = Number(event.extra?.failedCount || 0);
+  const duplicateCount = Number(event.extra?.duplicateCount || 0);
+  const countSummary =
+    successCount > 0 || failedCount > 0 || duplicateCount > 0
+      ? buildImportCountSummary(successCount, failedCount, duplicateCount)
+      : "";
+  const errorDetail = String(event.extra?.errorMessage || "").trim();
+  const fallbackDetail = String(event.content || "").trim();
+  const content = errorDetail || countSummary || fallbackDetail || "客户导入任务已完成";
+  let notificationRef: { close: () => void } | undefined;
+  const handleAcknowledge = () => {
+    notificationRef?.close();
+  };
+  const baseConfig = {
+    title: event.title || "客户导入完成",
+    content,
+    id: batchId > 0 ? buildCustomerImportNotificationId(batchId) : undefined,
+    position: "bottomRight" as const,
+    closable: true,
+    duration: 0,
+    footer: buildAcknowledgeNotificationFooter(handleAcknowledge)
+  };
+
+  if (status === "failed") {
+    notificationRef = Notification.error(baseConfig);
+    return;
+  }
+  if (status === "partial") {
+    notificationRef = Notification.warning(baseConfig);
+    return;
+  }
+  notificationRef = Notification.success(baseConfig);
 };
 
 class NoticeWebSocketClient {
@@ -345,6 +480,15 @@ class NoticeWebSocketClient {
           break;
         }
         if (data.scene === "export_queue") {
+          break;
+        }
+        if (data.scene === "customer_import_progress") {
+          emitCustomerImportTaskNotice(data);
+          break;
+        }
+        if (data.scene === "customer_import_result") {
+          emitCustomerImportTaskNotice(data);
+          openImportResultNotification(data);
           break;
         }
 

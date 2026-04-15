@@ -138,6 +138,41 @@ export type SysCustomerExportTaskResult = BaseResult<{
   updatedAt?: string;
 }>;
 
+export interface SysCustomerImportFailure {
+  row: number;
+  name?: string;
+  mobile?: string;
+  message: string;
+}
+
+export type SysCustomerImportSubmitResult = BaseResult<{
+  batchId: number;
+  status: "pending" | "running" | "canceling" | "canceled" | "success" | "partial" | "failed";
+  existing?: boolean;
+  message?: string;
+}>;
+
+export type SysCustomerImportBatchResult = BaseResult<{
+  id: number;
+  status: "pending" | "running" | "canceling" | "canceled" | "success" | "partial" | "failed";
+  startRow: number;
+  resumeRow?: number;
+  interrupted: boolean;
+  totalCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  duplicateCount: number;
+  progress: number;
+  remark?: string;
+  errorMessage?: string;
+  failures?: SysCustomerImportFailure[];
+  startedAt?: string;
+  finishedAt?: string;
+  updatedAt?: string;
+  fileName?: string;
+}>;
+
 export interface SysCustomerListParams {
   pageNum: number;
   pageSize: number;
@@ -217,34 +252,53 @@ export const getSysCustomerList = (params: SysCustomerListParams) => {
 };
 
 export const exportSysCustomerList = (params: Partial<SysCustomerListParams>) => {
-  return http.request<Blob>(
-    "get",
-    baseUrlApi("plugins/syscustomer/syscustomer/list"),
-    {
-      params: {
-        ...params,
-        export: 1
-      },
-      responseType: "blob"
-    }
-  );
+  return http.request<Blob>("get", baseUrlApi("plugins/syscustomer/syscustomer/list"), {
+    params: {
+      ...params,
+      export: 1
+    },
+    responseType: "blob"
+  });
 };
 
 export const submitSysCustomerExport = (params: Partial<SysCustomerListParams>) => {
-  return http.request<SysCustomerExportSubmitResult>(
-    "get",
-    baseUrlApi("plugins/syscustomer/syscustomer/list"),
-    {
-      params: {
-        ...params,
-        export: "submit"
-      }
+  return http.request<SysCustomerExportSubmitResult>("get", baseUrlApi("plugins/syscustomer/syscustomer/list"), {
+    params: {
+      ...params,
+      export: "submit"
     }
-  );
+  });
 };
 
 export const getSysCustomerExportTask = (taskId: number) => {
   return http.request<SysCustomerExportTaskResult>("get", baseUrlApi(`plugins/syscustomer/syscustomer/exportTask/${taskId}`));
+};
+
+export const importSysCustomerFile = (data: FormData) => {
+  return http.request<SysCustomerImportSubmitResult>("post", baseUrlApi("plugins/syscustomer/syscustomer/import"), {
+    data,
+    headers: {
+      "Content-Type": "multipart/form-data"
+    },
+    timeout: 10 * 60 * 1000
+  });
+};
+
+export const cancelSysCustomerImportBatch = (batchId: number) => {
+  return http.request<SysCustomerImportBatchResult>("post", baseUrlApi("plugins/syscustomer/syscustomer/import"), {
+    data: {
+      action: "cancel",
+      batchId
+    }
+  });
+};
+
+export const getSysCustomerImportBatch = (batchId: number) => {
+  return http.request<SysCustomerImportBatchResult>("get", baseUrlApi(`plugins/syscustomer/syscustomer/importBatch/${batchId}`));
+};
+
+export const getLatestSysCustomerImportBatch = () => {
+  return http.request<SysCustomerImportBatchResult>("get", baseUrlApi("plugins/syscustomer/syscustomer/importBatch/latest"));
 };
 
 export const createSysCustomer = (data: SysCustomerCreateParams) => {
