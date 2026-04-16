@@ -893,6 +893,10 @@ const exporting = ref(false);
 // 2. cancelingImport: 前端正在提交“终止导入”指令
 const importing = ref(false);
 const cancelingImport = ref(false);
+const cancelImportConfirmVisible = ref(false);
+const visibleImportNotificationTaskId = ref<number | null>(null);
+const visibleImportNotificationSignature = ref("");
+const cancelRequestedImportTaskIds = new Set<number>();
 // 如果上一次导入中断，这里会保存建议继续导入的起始行号。
 const suggestedImportResumeRow = ref(0);
 // 导入弹窗表单：渠道、起始行、备注、文件都集中放这里，便于一次性校验和提交。
@@ -1014,6 +1018,15 @@ const isImportTaskCancelable = (task?: ImportTaskData | null) =>
   ["pending", "running"].includes(normalizeImportTaskStatus(task?.status));
 const isImportTaskProcessing = (task?: ImportTaskData | null) =>
   ["pending", "running", "canceling"].includes(normalizeImportTaskStatus(task?.status));
+const isImportTaskCancelLocked = (task?: ImportTaskData | null) => {
+  const taskId = Number(task?.id || 0);
+  return (
+    cancelingImport.value ||
+    cancelImportConfirmVisible.value ||
+    normalizeImportTaskStatus(task?.status) === "canceling" ||
+    (taskId > 0 && cancelRequestedImportTaskIds.has(taskId))
+  );
+};
 // 所有进度条显示都经过这里兜底，保证最终一定是 0 到 100 之间的整数。
 const clampImportProgress = (value: unknown, fallback: number = 0) => {
   const numericValue = Number(value);
@@ -1360,6 +1373,17 @@ const getImportNotificationProgressTone = (task: ImportTaskData) => {
 
 const dismissedImportProgressNotificationKeys = new Set<string>();
 const buildImportProgressNotificationDismissKey = (task: ImportTaskData) => `${task.id}:progress`;
+const buildImportProgressNotificationSignature = (task: ImportTaskData) =>
+  [
+    task.id,
+    normalizeImportTaskStatus(task.status),
+    Number(task.totalCount || 0),
+    Number(task.processedCount || 0),
+    Number(task.successCount || 0),
+    Number(task.failedCount || 0),
+    Number(task.duplicateCount || 0),
+    clampImportProgress(task.progress)
+  ].join(":");
 const isImportProgressNotificationDismissed = (task: ImportTaskData) =>
   dismissedImportProgressNotificationKeys.has(buildImportProgressNotificationDismissKey(task));
 const markImportProgressNotificationDismissed = (task: ImportTaskData) => {
@@ -1372,10 +1396,12 @@ const clearImportProgressNotificationDismissed = (task: ImportTaskData) => {
 // 点击“终止导入”后，并不是立刻关任务，而是先通知后端切状态，
 // 后端会停止继续导入，并按 batch_id 把本批次已写入的客户彻底删除。
 const handleCancelImportTask = async (task?: ImportTaskData | null) => {
-  if (!task || !isImportTaskCancelable(task) || cancelingImport.value) {
+  const taskId = Number(task?.id || 0);
+  if (!task || taskId <= 0 || !isImportTaskCancelable(task) || isImportTaskCancelLocked(task)) {
     return;
   }
 
+  cancelImportConfirmVisible.value = true;
   Modal.confirm({
     title: "终止导入",
     content: "终止后将按 batch_id 彻底删除当前批次已导入的客户数据。",
@@ -1384,7 +1410,12 @@ const handleCancelImportTask = async (task?: ImportTaskData | null) => {
     okButtonProps: {
       status: "danger"
     },
+    onCancel: () => {
+      cancelImportConfirmVisible.value = false;
+    },
     onOk: async () => {
+      cancelImportConfirmVisible.value = false;
+      cancelRequestedImportTaskIds.add(taskId);
       cancelingImport.value = true;
       try {
         const response = await cancelSysCustomerImportBatch(task.id);
@@ -1418,6 +1449,7 @@ const handleCancelImportTask = async (task?: ImportTaskData | null) => {
           Message.info("导入任务状态已更新");
         }
       } catch (error) {
+        cancelRequestedImportTaskIds.delete(taskId);
         console.error("终止导入任务失败:", error);
       } finally {
         cancelingImport.value = false;
@@ -1438,6 +1470,7 @@ const buildImportNotificationFooter = (task: ImportTaskData, handleAcknowledge: 
                 status: "danger",
                 size: "mini",
                 loading: cancelingImport.value,
+                disabled: isImportTaskCancelLocked(task),
                 onClick: () => void handleCancelImportTask(task)
               },
               {
@@ -1461,20 +1494,33 @@ const buildImportNotificationFooter = (task: ImportTaskData, handleAcknowledge: 
   );
 
 const openImportProgressNotification = (task: ImportTaskData, options: { force?: boolean } = {}) => {
+  const normalizedStatus = normalizeImportTaskStatus(task.status);
+  const notificationSignature = buildImportProgressNotificationSignature(task);
   if (options.force) {
     clearImportProgressNotificationDismissed(task);
   } else if (isImportProgressNotificationDismissed(task)) {
     return;
   }
 
+  if (
+    !options.force &&
+    isImportTaskProcessing(task) &&
+    visibleImportNotificationTaskId.value === task.id &&
+    visibleImportNotificationSignature.value === notificationSignature
+  ) {
+    return;
+  }
+
   const notificationId = buildCustomerImportNotificationId(task.id);
+  Notification.remove(notificationId);
   const progressPercent = clampImportProgress(task.progress, normalizeImportTaskStatus(task.status) === "pending" ? 8 : 0);
   const renderProgress = isImportTaskProcessing(task) || progressPercent > 0;
   const summary = getImportTaskSummary(task);
-  let notificationRef: { close: () => void } | undefined;
   const handleAcknowledge = () => {
     markImportProgressNotificationDismissed(task);
-    notificationRef?.close();
+    visibleImportNotificationTaskId.value = null;
+    visibleImportNotificationSignature.value = "";
+    Notification.remove(notificationId);
   };
   const metaText =
     Number(task.totalCount || 0) > 0
@@ -1490,7 +1536,6 @@ const openImportProgressNotification = (task: ImportTaskData, options: { force?:
     position: "bottomRight" as const,
     duration: 0,
     closable: true,
-    onClose: () => markImportProgressNotificationDismissed(task),
     footer: buildImportNotificationFooter(task, handleAcknowledge),
     content: () =>
       h("div", { style: { display: "flex", flexDirection: "column", gap: "10px", minWidth: "260px" } }, [
@@ -1549,12 +1594,15 @@ const openImportProgressNotification = (task: ImportTaskData, options: { force?:
       ])
   };
 
-  if (normalizeImportTaskStatus(task.status) === "pending") {
-    notificationRef = Notification.warning(notificationConfig);
+  visibleImportNotificationTaskId.value = task.id;
+  visibleImportNotificationSignature.value = notificationSignature;
+
+  if (normalizedStatus === "pending") {
+    Notification.warning(notificationConfig);
     return;
   }
 
-  notificationRef = Notification.info(notificationConfig);
+  Notification.info(notificationConfig);
 };
 
 watch(
@@ -1574,7 +1622,7 @@ watch(
 
     if (isImportTaskProcessing(task)) {
       openImportProgressNotification(task);
-    } else if (previousTaskWasProcessing && previousTaskId === currentTaskId) {
+    } else if (previousTaskWasProcessing && previousTaskId === currentTaskId && !isImportProgressNotificationDismissed(task)) {
       openImportProgressNotification(task, { force: true });
     }
   },
@@ -1586,9 +1634,20 @@ watch(
 const applyImportTaskSnapshot = async (task: ImportTaskData | null, options: { reloadList?: boolean } = {}) => {
   activeImportTask.value = task;
   if (!task) {
+    cancelImportConfirmVisible.value = false;
+    cancelRequestedImportTaskIds.clear();
+    visibleImportNotificationTaskId.value = null;
+    visibleImportNotificationSignature.value = "";
     suggestedImportResumeRow.value = 0;
     importResumeReminderDismissed.value = false;
     return;
+  }
+
+  const normalizedStatus = normalizeImportTaskStatus(task.status);
+  if (normalizedStatus === "canceling") {
+    cancelRequestedImportTaskIds.add(task.id);
+  } else if (!["pending", "running"].includes(normalizedStatus)) {
+    cancelRequestedImportTaskIds.delete(task.id);
   }
 
   if (task.resumeRow && ["partial", "failed"].includes(String(task.status))) {
@@ -1905,33 +1964,8 @@ const handleImportConfirm = async () => {
       await loadLatestImportTask();
     }
 
-    if (result.data.existing && !batchId) {
-      let notificationRef: { close: () => void } | undefined;
-      const handleAcknowledge = () => {
-        notificationRef?.close();
-      };
-      notificationRef = Notification.info({
-        title: "导入任务进行中",
-        content: result.data.message || "当前已有导入任务正在处理中。",
-        position: "bottomRight",
-        duration: 0,
-        closable: true,
-        footer: buildImportNotificationFooter(
-          activeImportTask.value || {
-            id: 0,
-            status: "success",
-            startRow: 2,
-            interrupted: false,
-            totalCount: 0,
-            processedCount: 0,
-            successCount: 0,
-            failedCount: 0,
-            duplicateCount: 0,
-            progress: 0
-          },
-          handleAcknowledge
-        )
-      });
+    if (result.data.existing && !batchId && activeImportTask.value?.id) {
+      openImportProgressNotification(activeImportTask.value, { force: true });
     }
 
     importModalVisible.value = false;

@@ -332,6 +332,10 @@ export const openImportResultNotification = (event: NoticeBusinessEvent) => {
     footer: buildAcknowledgeNotificationFooter(handleAcknowledge)
   };
 
+  if (baseConfig.id) {
+    Notification.remove(baseConfig.id);
+  }
+
   if (status === "failed") {
     notificationRef = Notification.error(baseConfig);
     return;
